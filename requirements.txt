@@ -4,4 +4,3 @@ hvplot
 geoviews
 pyvista
 ipykernel
-pandas < 2.0.0

@@ -6,7 +6,7 @@ import xarray as xr
 
 import echoshader
 
-DATA_DIR = Path("../test_data/concatenated_MVBS.nc")
+DATA_DIR = Path("./echoshader/test_data/concatenated_MVBS.nc")
 
 
 @pytest.fixture

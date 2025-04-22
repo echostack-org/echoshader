@@ -1,4 +1,4 @@
-echopype=0.10.1
+echopype==0.10.1
 hvplot
 ipykernel
 geoviews

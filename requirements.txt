@@ -1,9 +1,10 @@
+echopype=0.10.1
 hvplot
 ipykernel
 geoviews
-netCDF4>1.6,<1.7.1
+# netCDF4>1.6,<1.7.1
 numpy<2
 pandas
 pyvista
-xarray>=2024.11.0
-zarr>=2,<3
+# xarray>=2024.11.0
+# zarr>=2,<3

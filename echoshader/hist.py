@@ -103,7 +103,7 @@ def table_plot(MVBS_ds: xarray.Dataset):
     skew_sum = obj_df_sum["Sv"].skew()
     kurt_sum = obj_df_sum["Sv"].kurt()
 
-    obj_desc = obj_df_sum.describe().reset_index()
+    obj_desc = obj_df_sum.describe().reset_index()[["index", "Sv"]]
 
     obj_desc = obj_desc.rename(columns={"Sv": "Sum"})
     obj_desc.loc[len(obj_desc)] = ["skew", skew_sum]
@@ -115,7 +115,7 @@ def table_plot(MVBS_ds: xarray.Dataset):
         skew_channel = obj_df_channel["Sv"].skew()
         kurt_channel = obj_df_channel["Sv"].kurt()
 
-        obj_df_channel = obj_df_channel.describe().reset_index()
+        obj_df_channel = obj_df_channel.describe().reset_index()[["index", "Sv"]]
 
         obj_df_channel = obj_df_channel.rename(columns={"Sv": channel})
         obj_df_channel.loc[len(obj_df_channel)] = ["skew", skew_channel]

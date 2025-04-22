@@ -1,8 +1,5 @@
-# TODO: Remove both echopype and pandas pins once dependency issue(s) has been dealt with
-echopype==0.8.3
 hvplot
 geoviews
 pyvista
 ipykernel
-pandas < 2.0.0
-numpy == 1.26.4
+numpy<2

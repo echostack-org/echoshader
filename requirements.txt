@@ -1,5 +1,6 @@
 hvplot
-geoviews
-pyvista
 ipykernel
+geoviews
 numpy<2
+pyvista
+xarray

@@ -103,10 +103,9 @@ class Echoshader(param.Parameterized):
 
         self._init_param()
 
-
     def _check_input(self):
         # Check if 'Sv' exists
-        if 'Sv' not in self.MVBS_ds.variables:
+        if "Sv" not in self.MVBS_ds.variables:
             raise ValueError("Dataset must contain a variable named 'Sv'.")
 
         # Check if 'Sv' has correct dimensions

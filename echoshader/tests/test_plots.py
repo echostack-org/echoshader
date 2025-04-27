@@ -37,7 +37,7 @@ def test_echogram(get_data):
         ),
         MVBS_ds.eshader.echogram(),
     )
-    echogram_panel.show()
+
     # Check if the panel is created without raising an exception
     assert isinstance(echogram_panel, panel.Row)
 

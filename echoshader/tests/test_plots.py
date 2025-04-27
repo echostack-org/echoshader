@@ -24,6 +24,7 @@ def get_data():
 
     return MVBS_ds
 
+
 def test_echogram(get_data):
     # Load sample data for testing
     MVBS_ds = get_data

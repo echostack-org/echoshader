@@ -97,9 +97,24 @@ class Echoshader(param.Parameterized):
 
         self.MVBS_ds = MVBS_ds
 
+        self._check_input()
+
         self._init_widget()
 
         self._init_param()
+
+    def _check_input(self):
+        # Check if 'Sv' exists
+        if "Sv" not in self.MVBS_ds.variables:
+            raise ValueError("Dataset must contain a variable named 'Sv'.")
+
+        # Check if 'Sv' has correct dimensions
+        expected_dims = ("channel", "ping_time", "echo_range")
+        actual_dims = self.MVBS_ds["Sv"].dims
+        if actual_dims != expected_dims:
+            raise ValueError(
+                f"'Sv' must have dimensions {expected_dims}, but got {actual_dims}."
+            )
 
     def _init_widget(self):
         self.colormap = panel.widgets.LiteralInput(

@@ -25,6 +25,18 @@ def get_data():
     return MVBS_ds
 
 
+def test_echogram_invalid_input(get_data):
+    # Load sample data for testing
+    MVBS_ds = get_data
+
+    # Rename the variable: change 'Sv' to 'abc'
+    MVBS_ds = MVBS_ds.rename({"Sv": "abc"})
+
+    # Creating an Echogram should raise a ValueError
+    with pytest.raises(ValueError, match="Dataset must contain a variable named 'Sv'"):
+        _ = MVBS_ds.eshader.echogram()
+
+
 def test_echogram():
     # Load sample data for testing
     MVBS_ds = get_data()

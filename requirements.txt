@@ -2,7 +2,7 @@ dask
 hvplot
 ipykernel
 geoviews
-netCDF4>1.6,<1.7.1
+netCDF4>1.6 #,<1.7.1
 numpy<2
 pandas
 pyvista

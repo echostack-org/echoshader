@@ -1,6 +1,10 @@
-# TODO: Remove both echopype and pandas pins once dependency issue(s) has been dealt with
-echopype==0.8.3
+dask
 hvplot
-geoviews
-pyvista
 ipykernel
+geoviews
+netCDF4>1.6
+numpy<2
+pandas
+pyvista
+xarray>=2024.11.0
+zarr>=2,<3

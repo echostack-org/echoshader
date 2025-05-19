@@ -33,7 +33,7 @@ repos:
       - id: flake8
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.44.0
+    rev: v0.45.0
     hooks:
       - id: markdownlint
         args: ["**/**/*.md", "--ignore", "docs/source/gsoc", "--enable", "MD013", "--disable", "MD043", "line_length", "--fix"]

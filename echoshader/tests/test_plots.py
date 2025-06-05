@@ -8,6 +8,7 @@ import echoshader
 
 DATA_DIR = Path("./echoshader/test_data/concatenated_MVBS.nc")
 
+
 @pytest.fixture
 def get_data():
     # When the bug is fixed, set this to True

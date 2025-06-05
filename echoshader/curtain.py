@@ -1,16 +1,17 @@
 from typing import List, Union
+
 import numpy as np
 import plotly.graph_objects as go
 import xarray as xr
 
 
 def curtain_plot(
-        MVBS_ds: xr.Dataset,
-        cmap: Union[str, List[str]] = "jet",
-        clim: tuple = None,
-        ratio: float = 0.001,
-        width: int = 800,
-        height: int = 600
+    MVBS_ds: xr.Dataset,
+    cmap: Union[str, List[str]] = "jet",
+    clim: tuple = None,
+    ratio: float = 0.001,
+    width: int = 800,
+    height: int = 600,
 ) -> go.Figure:
     """
     Create and display a 3D curtain plot using Plotly.
@@ -73,7 +74,7 @@ def curtain_plot(
         z=np.zeros_like(lon),
         mode="lines",
         line=dict(color="white", width=4),
-        name="Vessel Path"
+        name="Vessel Path",
     )
 
     # Create figure
@@ -88,14 +89,11 @@ def curtain_plot(
             yaxis_title="Latitude",
             zaxis_title="Depth (m)",
             zaxis=dict(autorange="reversed"),
-            camera=dict(
-                eye=dict(x=0.5, y=-2, z=0.5),
-                up=dict(x=0, y=0, z=1)
-            ),
+            camera=dict(eye=dict(x=0.5, y=-2, z=0.5), up=dict(x=0, y=0, z=1)),
             aspectmode="manual",
-            aspectratio=dict(x=2, y=1, z=0.5)
+            aspectratio=dict(x=2, y=1, z=0.5),
         ),
-        margin=dict(r=20, l=10, b=10, t=10)
+        margin=dict(r=20, l=10, b=10, t=10),
     )
 
     return fig

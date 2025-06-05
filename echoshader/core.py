@@ -109,7 +109,7 @@ class Echoshader(param.Parameterized):
             raise ValueError("Dataset must contain a variable named 'Sv'.")
 
         # Check if 'Sv' has correct dimensions
-        expected_dims = ("channel", "ping_time",  ("depth", "echo_range"))
+        expected_dims = ("channel", "ping_time", ("depth", "echo_range"))
         actual_dims = self.MVBS_ds["Sv"].dims
         for i, (actual, expected) in enumerate(zip(actual_dims, expected_dims)):
             if isinstance(expected, tuple):
@@ -715,12 +715,10 @@ class Echoshader(param.Parameterized):
 
         opts.pop("orientation_widget", None)
 
-        curtain_panel = panel.pane.Plotly(
-            fig,
-            **opts
-        )
+        curtain_panel = panel.pane.Plotly(fig, **opts)
 
         return curtain_panel
+
     def hist(
         self,
         bins: int = None,

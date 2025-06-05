@@ -127,7 +127,7 @@ def convert_to_color(
     )  # threshold at the bottom
     da_color = da_color.expand_dims("channel")
     da_color = (da_color - th_bottom) / (th_top - th_bottom)
-    da_color = numpy.squeeze(da_color.Sv.data).transpose().compute()
+    da_color = numpy.squeeze(da_color.Sv.data).transpose()
     return da_color
 
 

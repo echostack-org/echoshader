@@ -8,13 +8,12 @@ import panel
 import param
 import xarray
 from bokeh.util.warnings import BokehUserWarning
-
 from .box import get_box_plot, get_box_stream
 from .curtain import curtain_plot
 from .echogram import single_echogram, tricolor_echogram
 from .hist import hist_plot, table_plot
 from .map import convert_EPSG, get_track_corners, tile_plot, track_plot
-from .utils import curtain_opts, tiles
+from .utils import  tiles
 
 warnings.simplefilter(action="ignore", category=BokehUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -115,12 +114,12 @@ class Echoshader(param.Parameterized):
             if isinstance(expected, tuple):
                 if actual not in expected:
                     raise ValueError(
-                        f"'Sv' dimension at index {i} must be one of {expected}, but got '{actual}'."
+                    f"'Sv' dimension at index {i} must be one of {expected}, but got '{actual}'."
                     )
             else:
                 if actual != expected:
                     raise ValueError(
-                        f"'Sv' dimension at index {i} must be '{expected}', but got '{actual}'."
+                    f"'Sv' dimension at index {i} must be '{expected}', but got '{actual}'."
                     )
 
     def _init_widget(self):

@@ -109,12 +109,19 @@ class Echoshader(param.Parameterized):
             raise ValueError("Dataset must contain a variable named 'Sv'.")
 
         # Check if 'Sv' has correct dimensions
-        expected_dims = ("channel", "ping_time", "echo_range")
+        expected_dims = ("channel", "ping_time",  ("depth", "echo_range"))
         actual_dims = self.MVBS_ds["Sv"].dims
-        if actual_dims != expected_dims:
-            raise ValueError(
-                f"'Sv' must have dimensions {expected_dims}, but got {actual_dims}."
-            )
+        for i, (actual, expected) in enumerate(zip(actual_dims, expected_dims)):
+            if isinstance(expected, tuple):
+                if actual not in expected:
+                    raise ValueError(
+                        f"'Sv' dimension at index {i} must be one of {expected}, but got '{actual}'."
+                    )
+            else:
+                if actual != expected:
+                    raise ValueError(
+                        f"'Sv' dimension at index {i} must be '{expected}', but got '{actual}'."
+                    )
 
     def _init_widget(self):
         self.colormap = panel.widgets.LiteralInput(
@@ -684,37 +691,36 @@ class Echoshader(param.Parameterized):
 
         Returns
         -------
-        panel.panel
-            Curtain plot panel.
+        panel.pane.Plotly
+            Curtain plot panel with Plotly implementation.
         """
-        if self.control_mode_select.value is True:
+        if self.control_mode_select.value:
             MVBS_ds = self.MVBS_ds_in_gram_box
         else:
             MVBS_ds = self.MVBS_ds_in_track_box
 
-        curtain = curtain_plot(
+        fig = curtain_plot(
             MVBS_ds=MVBS_ds.sel(channel=self.channel_select.value),
             cmap=self.colormap.value,
             clim=self.Sv_range_slider.value,
             ratio=self.curtain_ratio.value,
         )
 
-        if "width" not in self.curtain_opts:
-            self.curtain_opts["width"] = curtain_opts["width"]
+        opts = self.curtain_opts.copy()
 
-        if "height" not in self.curtain_opts:
-            self.curtain_opts["height"] = curtain_opts["height"]
+        if "width" not in opts:
+            opts["width"] = 800
+        if "height" not in opts:
+            opts["height"] = 600
 
-        if "orientation_widget" not in self.curtain_opts:
-            self.curtain_opts["orientation_widget"] = True
+        opts.pop("orientation_widget", None)
 
-        curtain_panel = panel.panel(
-            curtain.ren_win,
-            **self.curtain_opts,
+        curtain_panel = panel.pane.Plotly(
+            fig,
+            **opts
         )
 
         return curtain_panel
-
     def hist(
         self,
         bins: int = None,

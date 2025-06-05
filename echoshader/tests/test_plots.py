@@ -8,7 +8,6 @@ import echoshader
 
 DATA_DIR = Path("./echoshader/test_data/concatenated_MVBS.nc")
 
-
 @pytest.fixture
 def get_data():
     # When the bug is fixed, set this to True
@@ -196,9 +195,7 @@ def test_curtain(get_data):
         MVBS_ds.eshader.curtain(),
     )
 
-    # Remember to set panel extension to "pyvista" when showing 2.5D curtain
-    panel.extension("pyvista")
-
+    curtain_panel.show()
     # Check if the panel is created without raising an exception
     assert isinstance(curtain_panel, panel.Row)
 

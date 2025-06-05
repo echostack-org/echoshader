@@ -114,14 +114,12 @@ class Echoshader(param.Parameterized):
             if isinstance(expected, tuple):
                 if actual not in expected:
                     raise ValueError(
-                    f"'Sv' dimension at index {i} "
-                    f"must be one of {expected}, but got '{actual}'."
+                    f"'Sv' dimension at index {i} must be one of {expected}, but got '{actual}'."
                     )
             else:
                 if actual != expected:
                     raise ValueError(
-                    f"'Sv' dimension at index {i} "
-                    f"must be '{expected}', but got '{actual}'."
+                    f"'Sv' dimension at index {i} must be '{expected}', but got '{actual}'."
                     )
 
     def _init_widget(self):

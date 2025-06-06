@@ -1,80 +1,10 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Tuple
 
 import holoviews
-import numpy
+import numpy as np
 import xarray
 
 from .utils import gram_opts
-
-
-def single_echogram(
-    MVBS_ds: xarray,
-    channel: str,
-    cmap: Union[str, List[str]],
-    value_range: tuple[float, float],
-    vert_dim: Optional[str] = "echo_range",
-):
-    """
-    Generate an echogram for a single frequency channel.
-
-    This function takes an xarray.Dataset containing MVBS (Multibeam Backscatter) data,
-    extracts the data for a specific frequency channel, and generates an echogram for
-    that channel using Holoviews. The echogram is a visual representation of the
-    backscatter values (Sv) over time (ping_time) and depth (echo_range).
-
-    Parameters
-    ----------
-    MVBS_ds : xarray.Dataset
-        xarray.Dataset containing MVBS data.
-    channel : str
-        The name of the frequency channel for which the echogram will be generated.
-        It should be a valid channel name present in the 'channel' dimension of MVBS_ds.
-    cmap : str or List[str]
-        The colormap(s) to use for the echogram. It can be a single colormap name or
-        a list of colormap names for each frequency channel (if multiple colormaps are used).
-        Input list like ['#0000ff', '#00ffff'] to customize colormap.
-    value_range : tuple[float, float]
-        The minimum and maximum value for the color scale of the echogram.
-    vert_dim : str, optional
-        The name of the vertical dimension, must be 1D.
-
-    Returns
-    -------
-    holoviews.element.Image
-        An echogram for the specified frequency channel, displaying the backscatter values (Sv)
-        over time (ping_time) and depth (echo_range). The echogram is rendered using Holoviews
-        with the provided colormap and color scale limits.
-
-    Examples
-    --------
-    # Assuming MVBS_ds is an xarray.Dataset containing MVBS data
-    # Generate an echogram for the channel 'GPT 38 kHz 00907208dd13 5-1 OOI.38|200'
-    echogram = echogram_single_frequency(
-        MVBS_ds,
-        channel='GPT 38 kHz 00907208dd13 5-1 OOI.38|200',
-        cmap='jet',
-        value_range=(-80,-30)
-    )
-
-    # Display the echogram using Panel
-    Panel.Row(echogram)
-    """
-    gram_opts["Image"]["cmap"] = cmap
-
-    gram_opts["Image"]["clim"] = value_range
-
-    gram_opts["Image"]["title"] = channel
-
-    if ~gram_opts["Image"]["invert_yaxis"]:
-        gram_opts["Image"]["invert_yaxis"] = True
-
-    echogram = (
-        holoviews.Dataset(MVBS_ds.sel(channel=channel))
-        .to(holoviews.Image, vdims=["Sv"], kdims=["ping_time", vert_dim])
-        .opts(gram_opts)
-    )
-
-    return echogram
 
 
 def convert_to_color(
@@ -127,65 +57,11 @@ def convert_to_color(
     )  # threshold at the bottom
     da_color = da_color.expand_dims("channel")
     da_color = (da_color - th_bottom) / (th_top - th_bottom)
-    da_color = numpy.squeeze(da_color.Sv.data).transpose()
+    da_color = np.squeeze(da_color.Sv.data).transpose()
     return da_color
 
 
-def tricolor_echogram(
-    MVBS_ds: xarray,
-    vmin: float,
-    vmax: float,
-    rgb_map: Dict[str, str] = {},
-    vert_dim: Optional[str] = "echo_range",
-):
-    """
-    Create a tricolor echogram for multiple frequency channels.
-
-    This function generates a tricolor echogram from an xarray.Dataset containing MVBS
-    (Multibeam Backscatter) data, where each color channel represents a different frequency
-    channel's backscatter values. The function allows custom mapping of frequency channels to
-    RGB color channels using the `rgb_map` dictionary.
-
-    Parameters
-    ----------
-    MVBS_ds : xarray.Dataset
-        xarray.Dataset containing MVBS data.
-    vmin : float
-        The minimum value for the color scale of the echogram.
-    vmax : float
-        The maximum value for the color scale of the echogram.
-    rgb_map : Dict[str, str], optional
-        A dictionary specifying the mapping of frequency channels to RGB color channels.
-        The keys are the frequency channel names, and the values are the corresponding
-        RGB channel names. If not provided, the function will assign the first three frequency
-        channels to the "R", "G", and "B" channels, respectively.
-    vert_dim : str, optional
-        Name of vertical dimension. Default is echo_range.
-
-    Returns
-    -------
-    holoviews.element.RGB
-        A tricolor echogram, where each color channel represents the backscatter values (Sv) of
-        a different frequency channel. The echogram is rendered using Holoviews with the provided
-        colormap and color scale limits.
-
-    Examples
-    --------
-    # Assuming MVBS_ds is an xarray.Dataset containing MVBS data
-    # Create a tricolor echogram for the first three frequency channels
-    tricolor_plot = tricolor_echogram(MVBS_ds, vmin=-80.0, vmax=-40.0)
-
-    # Alternatively, provide a custom mapping of frequency channels to RGB channels
-    rgb_mapping = {
-        'GPT 38 kHz 00907208dd13 5-1 OOI.38|200': 'R',
-        'GPT 50 kHz 00907208dd13 5-1 OOI.50|200': 'G',
-        'GPT 200 kHz 00907208dd13 5-1 OOI.200|200': 'B',
-    }
-    tricolor_plot = tricolor_echogram(MVBS_ds, vmin=-80.0, vmax=-40.0, rgb_map=rgb_mapping)
-
-    # Display the tricolor echogram using Panel
-    Panel.Row(tricolor_plot)
-    """
+def tricolor_echogram(MVBS_ds: xarray,vmin: float,vmax: float,rgb_map: Dict[str, str] = {},vert_dim: Optional[str] = "echo_range",):
 
     if ~gram_opts["RGB"]["invert_yaxis"]:
         gram_opts["RGB"]["invert_yaxis"] = True
@@ -213,3 +89,116 @@ def tricolor_echogram(
     ).opts(gram_opts)
 
     return rgb
+
+# def single_echogram(MVBS_ds: xarray,channel: str,cmap: Union[str, List[str]],value_range: tuple[float, float],vert_dim: Optional[str] = "echo_range",):
+
+#     gram_opts["Image"]["cmap"] = cmap
+#     gram_opts["Image"]["clim"] = value_range
+#     gram_opts["Image"]["title"] = channel
+
+#     if ~gram_opts["Image"]["invert_yaxis"]:
+#         gram_opts["Image"]["invert_yaxis"] = True
+
+#     echogram = (
+#         holoviews.Dataset(MVBS_ds.sel(channel=channel))
+#         .to(holoviews.Image, vdims=["Sv"], kdims=["ping_time", vert_dim])
+#         .opts(gram_opts)
+#     )
+
+#     return echogram
+
+
+def create_echogram(
+        MVBS_ds: xarray.Dataset,
+        channels: Union[str, List[str]] = None,
+        cmap: Union[str, List[str]] = "viridis",
+        value_range: tuple[float, float] = None,
+        vert_dim: str = "echo_range",
+        mode: str = "auto",**kwargs
+    ):
+    # Normalize inputs
+    if channels is None:
+        channels = list(MVBS_ds.channel.values)
+    elif isinstance(channels, str):
+        channels = [channels]
+    
+    # Ensure colormap is a list matching channels
+    if isinstance(cmap, str):
+        cmaps = [cmap] * len(channels)
+    elif isinstance(cmap, list):
+        cmaps = cmap + [cmap[-1]] * (len(channels) - len(cmap))  # Extend if needed
+    else:
+        cmaps = ["viridis"] * len(channels)
+    
+    # Auto-detect mode if needed
+    if mode == "auto":
+        mode = "single" if len(channels) == 1 else "rgb" if len(channels) == 3 else "layout"
+    
+    # Validate mode
+    if mode == "rgb" and len(channels) != 3:
+        raise ValueError(f"RGB mode requires exactly 3 channels, got {len(channels)}")
+    
+    # Set up common options
+    if mode == 'rgb':
+        opts_dict = dict(gram_opts.get("RGB", {}))
+    else:
+        opts_dict = dict(gram_opts.get("Image", {}))
+
+    if "invert_yaxis" not in opts_dict:
+        opts_dict["invert_yaxis"] = True
+    
+    # Create visualization based on mode
+    if mode in ["single", "layout"]:
+        # Create individual echograms
+        echograms = []
+        for i, (channel, channel_cmap) in enumerate(zip(channels, cmaps)):
+            opts_dict["clim"] = value_range
+            opts_dict["cmap"] = channel_cmap
+            opts_dict["title"] = channel
+            
+            echogram = (
+                holoviews.Dataset(MVBS_ds.sel(channel=channel))
+                .to(holoviews.Image, vdims=["Sv"], kdims=["ping_time", vert_dim])
+                .opts(**opts_dict)
+            )
+
+            echograms.append(echogram)
+            
+            if mode == "single":
+                break  # Only use first channel
+        
+        # Return single or layout
+        if mode == "single":
+            return echograms[0]
+        else:
+            cols = kwargs.get("layout_cols", 1)
+            return holoviews.Layout(echograms).cols(cols)
+    
+    elif mode == "rgb":        
+        # Get RGB mapping
+        rgb_mapping = kwargs.get("rgb_mapping", {
+            channels[0]: "R",
+            channels[1]: "G", 
+            channels[2]: "B"
+        })
+        
+        # Create normalized color arrays for each channel
+        rgb_arrays = {}
+        for channel, color in rgb_mapping.items():
+            # Extract and normalize data
+            data = MVBS_ds.sel(channel=channel).Sv.values
+            data = np.clip(data, value_range[0], value_range[1])
+            data = (data - value_range[0]) / (value_range[1] - value_range[0])
+            rgb_arrays[color] = data.T
+        
+        return holoviews.RGB(
+            (
+                MVBS_ds.ping_time.data,
+                MVBS_ds[vert_dim].data,
+                rgb_arrays["R"],
+                rgb_arrays["G"],
+                rgb_arrays["B"],
+            )
+        ).opts(**opts_dict)
+    else:
+        raise ValueError(f"Unknown mode: {mode}")

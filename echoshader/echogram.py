@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import holoviews
 import numpy as np
@@ -61,7 +61,13 @@ def convert_to_color(
     return da_color
 
 
-def tricolor_echogram(MVBS_ds: xarray,vmin: float,vmax: float,rgb_map: Dict[str, str] = {},vert_dim: Optional[str] = "echo_range",):
+def tricolor_echogram(
+    MVBS_ds: xarray,
+    vmin: float,
+    vmax: float,
+    rgb_map: Dict[str, str] = {},
+    vert_dim: Optional[str] = "echo_range",
+):
 
     if ~gram_opts["RGB"]["invert_yaxis"]:
         gram_opts["RGB"]["invert_yaxis"] = True
@@ -90,6 +96,7 @@ def tricolor_echogram(MVBS_ds: xarray,vmin: float,vmax: float,rgb_map: Dict[str,
 
     return rgb
 
+
 # def single_echogram(MVBS_ds: xarray,channel: str,cmap: Union[str, List[str]],value_range: tuple[float, float],vert_dim: Optional[str] = "echo_range",):
 
 #     gram_opts["Image"]["cmap"] = cmap
@@ -109,19 +116,20 @@ def tricolor_echogram(MVBS_ds: xarray,vmin: float,vmax: float,rgb_map: Dict[str,
 
 
 def create_echogram(
-        MVBS_ds: xarray.Dataset,
-        channels: Union[str, List[str]] = None,
-        cmap: Union[str, List[str]] = "viridis",
-        value_range: tuple[float, float] = None,
-        vert_dim: str = "echo_range",
-        mode: str = "auto",**kwargs
-    ):
+    MVBS_ds: xarray.Dataset,
+    channels: Union[str, List[str]] = None,
+    cmap: Union[str, List[str]] = "viridis",
+    value_range: tuple[float, float] = None,
+    vert_dim: str = "echo_range",
+    mode: str = "auto",
+    **kwargs,
+):
     # Normalize inputs
     if channels is None:
         channels = list(MVBS_ds.channel.values)
     elif isinstance(channels, str):
         channels = [channels]
-    
+
     # Ensure colormap is a list matching channels
     if isinstance(cmap, str):
         cmaps = [cmap] * len(channels)
@@ -129,24 +137,28 @@ def create_echogram(
         cmaps = cmap + [cmap[-1]] * (len(channels) - len(cmap))  # Extend if needed
     else:
         cmaps = ["viridis"] * len(channels)
-    
+
     # Auto-detect mode if needed
     if mode == "auto":
-        mode = "single" if len(channels) == 1 else "rgb" if len(channels) == 3 else "layout"
-    
+        mode = (
+            "single"
+            if len(channels) == 1
+            else "rgb" if len(channels) == 3 else "layout"
+        )
+
     # Validate mode
     if mode == "rgb" and len(channels) != 3:
         raise ValueError(f"RGB mode requires exactly 3 channels, got {len(channels)}")
-    
+
     # Set up common options
-    if mode == 'rgb':
+    if mode == "rgb":
         opts_dict = dict(gram_opts.get("RGB", {}))
     else:
         opts_dict = dict(gram_opts.get("Image", {}))
 
     if "invert_yaxis" not in opts_dict:
         opts_dict["invert_yaxis"] = True
-    
+
     # Create visualization based on mode
     if mode in ["single", "layout"]:
         # Create individual echograms
@@ -155,7 +167,7 @@ def create_echogram(
             opts_dict["clim"] = value_range
             opts_dict["cmap"] = channel_cmap
             opts_dict["title"] = channel
-            
+
             echogram = (
                 holoviews.Dataset(MVBS_ds.sel(channel=channel))
                 .to(holoviews.Image, vdims=["Sv"], kdims=["ping_time", vert_dim])
@@ -163,25 +175,23 @@ def create_echogram(
             )
 
             echograms.append(echogram)
-            
+
             if mode == "single":
                 break  # Only use first channel
-        
+
         # Return single or layout
         if mode == "single":
             return echograms[0]
         else:
             cols = kwargs.get("layout_cols", 1)
             return holoviews.Layout(echograms).cols(cols)
-    
-    elif mode == "rgb":        
+
+    elif mode == "rgb":
         # Get RGB mapping
-        rgb_mapping = kwargs.get("rgb_mapping", {
-            channels[0]: "R",
-            channels[1]: "G", 
-            channels[2]: "B"
-        })
-        
+        rgb_mapping = kwargs.get(
+            "rgb_mapping", {channels[0]: "R", channels[1]: "G", channels[2]: "B"}
+        )
+
         # Create normalized color arrays for each channel
         rgb_arrays = {}
         for channel, color in rgb_mapping.items():
@@ -190,7 +200,7 @@ def create_echogram(
             data = np.clip(data, value_range[0], value_range[1])
             data = (data - value_range[0]) / (value_range[1] - value_range[0])
             rgb_arrays[color] = data.T
-        
+
         return holoviews.RGB(
             (
                 MVBS_ds.ping_time.data,

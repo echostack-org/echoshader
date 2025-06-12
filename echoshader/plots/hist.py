@@ -3,7 +3,7 @@ import hvplot.xarray  # noqa
 import pandas
 import xarray
 
-from .utils import gram_opts
+from ..utils import gram_opts
 
 
 def hist_plot(MVBS_ds: xarray.Dataset, bins: int = 24, overlay: bool = True):

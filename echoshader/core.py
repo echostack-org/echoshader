@@ -9,11 +9,11 @@ import param
 import xarray
 from bokeh.util.warnings import BokehUserWarning
 
-from .box import get_box_plot, get_box_stream
-from .curtain import curtain_plot
-from .echogram import create_echogram
-from .hist import hist_plot, table_plot
-from .map import convert_EPSG, get_track_corners, tile_plot, track_plot
+from .plots.box import get_box_plot, get_box_stream
+from .plots.curtain import curtain_plot
+from .plots.echogram import create_echogram
+from .plots.hist import hist_plot, table_plot
+from .plots.map import convert_EPSG, get_track_corners, tile_plot, track_plot
 from .utils import curtain_opts, tiles
 
 warnings.simplefilter(action="ignore", category=BokehUserWarning)

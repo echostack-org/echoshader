@@ -4,7 +4,7 @@ import holoviews
 import numpy as np
 import xarray
 
-from .utils import gram_opts
+from ..utils import gram_opts
 
 
 def convert_to_color(
@@ -61,34 +61,34 @@ def convert_to_color(
     return da_color
 
 
-def tricolor_echogram(MVBS_ds: xarray,vmin: float,vmax: float,rgb_map: Dict[str, str] = {},vert_dim: Optional[str] = "echo_range",):
+# def tricolor_echogram(MVBS_ds: xarray,vmin: float,vmax: float,rgb_map: Dict[str, str] = {},vert_dim: Optional[str] = "echo_range",):
 
-    if ~gram_opts["RGB"]["invert_yaxis"]:
-        gram_opts["RGB"]["invert_yaxis"] = True
+#     if ~gram_opts["RGB"]["invert_yaxis"]:
+#         gram_opts["RGB"]["invert_yaxis"] = True
 
-    if rgb_map == {}:
-        rgb_map[MVBS_ds.channel.values[0]] = "R"
-        rgb_map[MVBS_ds.channel.values[1]] = "G"
-        rgb_map[MVBS_ds.channel.values[2]] = "B"
+#     if rgb_map == {}:
+#         rgb_map[MVBS_ds.channel.values[0]] = "R"
+#         rgb_map[MVBS_ds.channel.values[1]] = "G"
+#         rgb_map[MVBS_ds.channel.values[2]] = "B"
 
-    rgb_ch = {"R": None, "G": None, "B": None}
+#     rgb_ch = {"R": None, "G": None, "B": None}
 
-    for ch, color in rgb_map.items():
-        rgb_ch[color] = convert_to_color(
-            MVBS_ds, channel_sel=ch, th_bottom=vmin, th_top=vmax
-        )
+#     for ch, color in rgb_map.items():
+#         rgb_ch[color] = convert_to_color(
+#             MVBS_ds, channel_sel=ch, th_bottom=vmin, th_top=vmax
+#         )
 
-    rgb = holoviews.RGB(
-        (
-            MVBS_ds.ping_time.data,
-            MVBS_ds[vert_dim].data,
-            rgb_ch["R"],
-            rgb_ch["G"],
-            rgb_ch["B"],
-        )
-    ).opts(gram_opts)
+#     rgb = holoviews.RGB(
+#         (
+#             MVBS_ds.ping_time.data,
+#             MVBS_ds[vert_dim].data,
+#             rgb_ch["R"],
+#             rgb_ch["G"],
+#             rgb_ch["B"],
+#         )
+#     ).opts(gram_opts)
 
-    return rgb
+#     return rgb
 
 # def single_echogram(MVBS_ds: xarray,channel: str,cmap: Union[str, List[str]],value_range: tuple[float, float],vert_dim: Optional[str] = "echo_range",):
 

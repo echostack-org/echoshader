@@ -1,7 +1,7 @@
 import holoviews
 import numpy
 
-from .utils import gram_opts
+from ..utils import gram_opts
 
 
 def get_box_stream(source_pic, bounds: tuple = None):

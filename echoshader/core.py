@@ -178,7 +178,7 @@ class Echoshader(param.Parameterized):
         vmax: float = None,
         rgb_composite: bool = False,
         vert_dim: Optional[str] = "echo_range",
-        opts=[],
+        **opts,
     ):
         """
         Display echogram plots based on specified parameters.
@@ -415,13 +415,16 @@ class Echoshader(param.Parameterized):
         reset_stream.add_subscriber(self._update_gram_reset)
 
         # Apply bounds and options
-        return (echogram * self.gram_bounds).opts(self.gram_opts)
+        if self.gram_opts:
+            return (echogram * self.gram_bounds).opts(**self.gram_opts)
+        else:
+            return echogram * self.gram_bounds
 
     def track(
         self,
         tile: str = None,
         control: bool = False,
-        opts=[],
+        **opts,
     ):
         """
         Display track plots based on specified parameters.

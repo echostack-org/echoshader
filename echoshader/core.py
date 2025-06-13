@@ -314,12 +314,12 @@ class Echoshader(param.Parameterized):
             )
 
         return MVBS_ds_in_gram_box
-    
 
     @param.depends(
-    "Sv_range_slider.value",
-    "colormap.value",
-    "update_gram_flag.counter",)
+        "Sv_range_slider.value",
+        "colormap.value",
+        "update_gram_flag.counter",
+    )
     def _echogram_plot(self):
         """
         Generate echogram plot(s) based on current parameters.
@@ -337,26 +337,24 @@ class Echoshader(param.Parameterized):
             MVBS_ds = self.MVBS_ds_in_track_box
 
         # Determine mode and prepare parameters
-        if hasattr(self, 'rgb_composite') and self.rgb_composite:
+        if hasattr(self, "rgb_composite") and self.rgb_composite:
             mode = "rgb"
-            channels = self.tri_channel if hasattr(self, 'tri_channel') else self.channel[:3]
+            channels = (
+                self.tri_channel if hasattr(self, "tri_channel") else self.channel[:3]
+            )
             # Create RGB mapping
-            rgb_mapping = {
-                channels[0]: "R",
-                channels[1]: "G",
-                channels[2]: "B"
-            }
+            rgb_mapping = {channels[0]: "R", channels[1]: "G", channels[2]: "B"}
             kwargs = {"rgb_mapping": rgb_mapping}
         else:
             # Get channels from self.channel if it exists, otherwise use all channels
-            if hasattr(self, 'channel'):
+            if hasattr(self, "channel"):
                 channels = self.channel
             else:
                 channels = self.MVBS_ds.channel.values.tolist()
             # Determine mode based on number of channels
             if len(self.channel) == 1:
                 mode = "single"
-            elif len(self.channel) == 3 and getattr(self, 'auto_rgb', False):
+            elif len(self.channel) == 3 and getattr(self, "auto_rgb", False):
                 mode = "rgb"
                 kwargs = {}
             else:
@@ -372,20 +370,20 @@ class Echoshader(param.Parameterized):
             value_range=tuple(self.Sv_range_slider.value),
             vert_dim=self.vert_dim,
             mode=mode,
-            **kwargs
+            **kwargs,
         )
 
         # Apply time limits if not in control mode
         if self.control_mode_select.value is False:
             MVBS_ds_with_time_range = MVBS_ds.dropna(dim="ping_time", how="all")
-            
+
             if len(MVBS_ds_with_time_range.ping_time) > 0:
                 one_hour = numpy.timedelta64(1, "h")
                 time_limits = (
                     MVBS_ds_with_time_range.ping_time.values[0] - one_hour,
                     MVBS_ds_with_time_range.ping_time.values[-1] + one_hour,
                 )
-                
+
                 # Apply time limits to all elements
                 if isinstance(echogram, holoviews.Layout):
                     for element in echogram:
@@ -407,7 +405,7 @@ class Echoshader(param.Parameterized):
             box_stream.add_subscriber(self._update_gram_box)
 
         # Initialize box selection with bounds from base element
-        if hasattr(base_element, 'lbrt'):
+        if hasattr(base_element, "lbrt"):
             self._update_gram_box(tuple(base_element.lbrt))
 
         # Set up reset stream

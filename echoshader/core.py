@@ -10,11 +10,11 @@ import xarray
 from bokeh.util.warnings import BokehUserWarning
 
 from .box import get_box_plot, get_box_stream
-from .curtain import curtain_plot_plotly,curtain_plot_pyvista
+from .curtain import curtain_plot_plotly, curtain_plot_pyvista
 from .echogram import single_echogram, tricolor_echogram
 from .hist import hist_plot, table_plot
 from .map import convert_EPSG, get_track_corners, tile_plot, track_plot
-from .utils import tiles, curtain_opts
+from .utils import curtain_opts, tiles
 
 warnings.simplefilter(action="ignore", category=BokehUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -705,8 +705,6 @@ class Echoshader(param.Parameterized):
         else:
             MVBS_ds = self.MVBS_ds_in_track_box
 
-
-
         if "width" not in self.curtain_opts:
             self.curtain_opts["width"] = curtain_opts["width"]
 
@@ -714,7 +712,7 @@ class Echoshader(param.Parameterized):
             self.curtain_opts["height"] = curtain_opts["height"]
 
         if "orientation_widget" not in self.curtain_opts:
-             self.curtain_opts["orientation_widget"] = True
+            self.curtain_opts["orientation_widget"] = True
 
         if self.curtain_engine == "pyvista":
             self.curtain_opts.setdefault("orientation_widget", True)

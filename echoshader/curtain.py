@@ -101,10 +101,10 @@ def curtain_plot_plotly(
 
 
 def curtain_plot_pyvista(
-        MVBS_ds: xarray.Dataset,
-        cmap: Union[str, List[str]] = "jet",
-        clim: tuple = None,
-        ratio: float = 0.001,
+    MVBS_ds: xarray.Dataset,
+    cmap: Union[str, List[str]] = "jet",
+    clim: tuple = None,
+    ratio: float = 0.001,
 ):
     """
     Create and display a 2D curtain plot from a given xarray dataset.

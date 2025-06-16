@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Union
 
 import holoviews
 import numpy as np
@@ -59,54 +59,6 @@ def convert_to_color(
     da_color = (da_color - th_bottom) / (th_top - th_bottom)
     da_color = np.squeeze(da_color.Sv.data).transpose()
     return da_color
-
-
-# def tricolor_echogram(MVBS_ds: xarray,vmin: float,vmax: float,rgb_map: Dict[str, str] = {},vert_dim: Optional[str] = "echo_range",):
-
-#     if ~gram_opts["RGB"]["invert_yaxis"]:
-#         gram_opts["RGB"]["invert_yaxis"] = True
-
-#     if rgb_map == {}:
-#         rgb_map[MVBS_ds.channel.values[0]] = "R"
-#         rgb_map[MVBS_ds.channel.values[1]] = "G"
-#         rgb_map[MVBS_ds.channel.values[2]] = "B"
-
-#     rgb_ch = {"R": None, "G": None, "B": None}
-
-#     for ch, color in rgb_map.items():
-#         rgb_ch[color] = convert_to_color(
-#             MVBS_ds, channel_sel=ch, th_bottom=vmin, th_top=vmax
-#         )
-
-#     rgb = holoviews.RGB(
-#         (
-#             MVBS_ds.ping_time.data,
-#             MVBS_ds[vert_dim].data,
-#             rgb_ch["R"],
-#             rgb_ch["G"],
-#             rgb_ch["B"],
-#         )
-#     ).opts(gram_opts)
-
-#     return rgb
-
-
-# def single_echogram(MVBS_ds: xarray,channel: str,cmap: Union[str, List[str]],value_range: tuple[float, float],vert_dim: Optional[str] = "echo_range",):
-
-#     gram_opts["Image"]["cmap"] = cmap
-#     gram_opts["Image"]["clim"] = value_range
-#     gram_opts["Image"]["title"] = channel
-
-#     if ~gram_opts["Image"]["invert_yaxis"]:
-#         gram_opts["Image"]["invert_yaxis"] = True
-
-#     echogram = (
-#         holoviews.Dataset(MVBS_ds.sel(channel=channel))
-#         .to(holoviews.Image, vdims=["Sv"], kdims=["ping_time", vert_dim])
-#         .opts(gram_opts)
-#     )
-
-#     return echogram
 
 
 def create_echogram(

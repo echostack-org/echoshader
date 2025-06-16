@@ -414,9 +414,17 @@ class Echoshader(param.Parameterized):
 
         # Apply bounds and options
         if self.gram_opts:
-            return (echogram * self.gram_bounds).opts(**self.gram_opts)
-        else:
-            return echogram * self.gram_bounds
+            if isinstance(echogram, holoviews.Layout):
+                # Apply options to all elements in the layout without reconstructing it
+                echogram = echogram.opts(
+                    holoviews.opts.Image(**self.gram_opts),
+                    holoviews.opts.RGB(**self.gram_opts)
+                )
+            else:
+                echogram = echogram.opts(**self.gram_opts)
+
+        return echogram * self.gram_bounds
+
 
     def track(
         self,

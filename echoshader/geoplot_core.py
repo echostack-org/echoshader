@@ -42,11 +42,11 @@ class GridDataVisualizer:
     and create interactive map visualizations. It's dimension-agnostic and can
     handle single or multiple metrics.
     """
-    
+
     def __init__(self, gdf: gpd.GeoDataFrame):
         super().__init__()
         self.gdf = gdf
-    
+
     def utm_string_generator(self, longitude: float, latitude: float) -> str:
         """
         Converts projection string from longitude/latitude (WGS84) to equivalent UTM.

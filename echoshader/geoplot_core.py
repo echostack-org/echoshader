@@ -46,18 +46,9 @@ class GridDataVisualizer:
     handle single or multiple metrics.
     """
     
-    def __init__(self, extension: str = 'bokeh'):
-        """
-        Initialize the Grid Data Visualizer.
-        
-        Parameters:
-        -----------
-        extension : str, default='bokeh'
-            The GeoViews extension to use for interactive plots.
-        """
-        gv.extension(extension)
-        self.extension = extension
-        logger.info(f"Initialized GridDataVisualizer with {extension} backend")
+    def __init__(self, gdf: gpd.GeoDataFrame):
+        super().__init__()
+        self.gdf = gdf
     
     def utm_string_generator(self, longitude: float, latitude: float) -> str:
         """

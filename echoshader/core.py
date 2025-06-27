@@ -297,9 +297,9 @@ class Echoshader(param.Parameterized):
             The value indicating a reset event.
         """
         self.MVBS_ds_in_gram_box = self.MVBS_ds
-    
+
         self.gram_box_stream.update(bounds=None)
-        
+
         self.update_gram_flag.event()
 
     def _extract_data_from_gram_box(self, bounds):
@@ -390,7 +390,7 @@ class Echoshader(param.Parameterized):
         # Clean up old reset stream if it exists
         if self._gram_reset_stream:
             self._gram_reset_stream.clear()
-            
+
         # Create new reset stream
         self._gram_reset_stream = holoviews.streams.PlotReset(source=echogram)
         self._gram_reset_stream.add_subscriber(self._update_gram_reset)
@@ -457,10 +457,12 @@ class Echoshader(param.Parameterized):
         # Clean up old reset stream if it exists
         if self._gram_reset_stream:
             self._gram_reset_stream.clear()
-            
+
         # Create new reset stream
         if echograms_list:
-            self._gram_reset_stream = holoviews.streams.PlotReset(source=echograms_list[0])
+            self._gram_reset_stream = holoviews.streams.PlotReset(
+                source=echograms_list[0]
+            )
             self._gram_reset_stream.add_subscriber(self._update_gram_reset)
 
         # get echograms stack
@@ -517,13 +519,13 @@ class Echoshader(param.Parameterized):
     def _extract_data_from_track_box(self, bounds):
         """
         Extract data from the track box based on given bounds.
-        
+
         Parameters
         ----------
         bounds : tuple
             Bounds of the track box in the format (left, bottom, right, top).
             Note: These are in Web Mercator coordinates if from tile plot.
-        
+
         Returns
         -------
         xarray.Dataset
@@ -536,9 +538,13 @@ class Echoshader(param.Parameterized):
             # Check if bounds are in Web Mercator (large values)
             if abs(bounds[0]) > 180:
                 # Convert Web Mercator to lat/lon
-                lat_min, lon_min = convert_EPSG(lat=bounds[1], lon=bounds[0], mercator_to_coord=True)
-                lat_max, lon_max = convert_EPSG(lat=bounds[3], lon=bounds[2], mercator_to_coord=True)
-                
+                lat_min, lon_min = convert_EPSG(
+                    lat=bounds[1], lon=bounds[0], mercator_to_coord=True
+                )
+                lat_max, lon_max = convert_EPSG(
+                    lat=bounds[3], lon=bounds[2], mercator_to_coord=True
+                )
+
                 MVBS_ds_in_track_box = self.MVBS_ds.where(
                     (self.MVBS_ds.longitude > lon_min)
                     & (self.MVBS_ds.latitude > lat_min)
@@ -553,7 +559,7 @@ class Echoshader(param.Parameterized):
                     & (self.MVBS_ds.longitude < bounds[2])
                     & (self.MVBS_ds.latitude < bounds[3])
                 )
-        
+
         return MVBS_ds_in_track_box
 
     def _update_track_reset(self, resetting):
@@ -567,13 +573,13 @@ class Echoshader(param.Parameterized):
         """
         # Reset to full dataset
         self.MVBS_ds_in_track_box = self.MVBS_ds
-        
+
         # Clear the track box stream bounds if it exists
-        if hasattr(self, 'track_box_stream'):
+        if hasattr(self, "track_box_stream"):
             self.track_box_stream.update(bounds=None)
-        if hasattr(self, 'tile_box_stream'):
+        if hasattr(self, "tile_box_stream"):
             self.tile_box_stream.update(bounds=None)
-            
+
         # Trigger update
         self.update_track_flag.event()
 
@@ -611,7 +617,7 @@ class Echoshader(param.Parameterized):
     def _tile_plot(self):
         """
         Generate a map tile plot based on current parameters.
-        
+
         Returns
         -------
         holoviews.Overlay
@@ -634,14 +640,14 @@ class Echoshader(param.Parameterized):
         center = (center_lon, center_lat, center_lon, center_lat)
 
         self.tile_box_stream = get_box_stream(tile, center)
-        
+
         # Add subscriber for tile box selection
         self.tile_box_stream.add_subscriber(self._update_track_box)
 
         # Clean up old reset stream if it exists
         if self._track_reset_stream:
             self._track_reset_stream.clear()
-            
+
         # Create new reset stream
         self._track_reset_stream = holoviews.streams.PlotReset(source=tile)
         self._track_reset_stream.add_subscriber(self._update_track_reset)

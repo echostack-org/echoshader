@@ -179,6 +179,10 @@ class Echoshader(param.Parameterized):
 
         self.MVBS_ds_in_track_box = self.MVBS_ds
 
+        self._gram_reset_stream = None
+
+        self._track_reset_stream = None
+
     def echogram(
         self,
         channel: List[str] = None,
@@ -292,6 +296,10 @@ class Echoshader(param.Parameterized):
         resetting : bool
             The value indicating a reset event.
         """
+        self.MVBS_ds_in_gram_box = self.MVBS_ds
+
+        self.gram_box_stream.update(bounds=None)
+
         self.update_gram_flag.event()
 
     def _extract_data_from_gram_box(self, bounds):
@@ -338,11 +346,11 @@ class Echoshader(param.Parameterized):
         holoviews.Overlay
             Tricolor echogram plot.
         """
-
+        # Use track-selected data when in "Tracks Control" mode
         if self.control_mode_select.value is True:
             MVBS_ds = self.MVBS_ds
         else:
-            MVBS_ds = self.MVBS_ds_in_track_box
+            MVBS_ds = self.MVBS_ds_in_track_box  # Use track-selected data
 
         rgb_map = {}
         rgb_map[self.tri_channel[0]] = "R"
@@ -375,12 +383,17 @@ class Echoshader(param.Parameterized):
         # add subscriber to update unified box select
         box_stream.add_subscriber(self._update_gram_box)
 
-        # set inital value of box stream
-        self._update_gram_box(tuple(echogram.lbrt))
+        # set initial value of box stream after reset
+        initial_bounds = tuple(echogram.lbrt)
+        self._update_gram_box(initial_bounds)
 
-        reset_stream = holoviews.streams.PlotReset(source=echogram)
+        # Clean up old reset stream if it exists
+        if self._gram_reset_stream:
+            self._gram_reset_stream.clear()
 
-        reset_stream.add_subscriber(self._update_gram_reset)
+        # Create new reset stream
+        self._gram_reset_stream = holoviews.streams.PlotReset(source=echogram)
+        self._gram_reset_stream.add_subscriber(self._update_gram_reset)
 
         bounds = self.gram_bounds
 
@@ -400,7 +413,6 @@ class Echoshader(param.Parameterized):
         holoviews.Layout
             Layout of echogram plots.
         """
-
         if self.control_mode_select.value is True:
             MVBS_ds = self.MVBS_ds
         else:
@@ -437,12 +449,21 @@ class Echoshader(param.Parameterized):
 
             echograms_list.append(echogram)
 
-        # set inital value of box stream
-        self._update_gram_box(tuple(echograms_list[0].lbrt))
+        # set initial value of box stream after reset
+        if echograms_list:
+            initial_bounds = tuple(echograms_list[0].lbrt)
+            self._update_gram_box(initial_bounds)
 
-        reset_stream = holoviews.streams.PlotReset(source=echograms_list[0])
+        # Clean up old reset stream if it exists
+        if self._gram_reset_stream:
+            self._gram_reset_stream.clear()
 
-        reset_stream.add_subscriber(self._update_gram_reset)
+        # Create new reset stream
+        if echograms_list:
+            self._gram_reset_stream = holoviews.streams.PlotReset(
+                source=echograms_list[0]
+            )
+            self._gram_reset_stream.add_subscriber(self._update_gram_reset)
 
         # get echograms stack
         echograms = holoviews.Layout(echograms_list).cols(1)
@@ -503,6 +524,7 @@ class Echoshader(param.Parameterized):
         ----------
         bounds : tuple
             Bounds of the track box in the format (left, bottom, right, top).
+            Note: These are in Web Mercator coordinates if from tile plot.
 
         Returns
         -------
@@ -512,12 +534,31 @@ class Echoshader(param.Parameterized):
         if bounds is None or (bounds[0] == bounds[2] or bounds[1] == bounds[3]):
             MVBS_ds_in_track_box = self.MVBS_ds
         else:
-            MVBS_ds_in_track_box = self.MVBS_ds.where(
-                (self.MVBS_ds.longitude > bounds[0])
-                & (self.MVBS_ds.latitude > bounds[1])
-                & (self.MVBS_ds.longitude < bounds[2])
-                & (self.MVBS_ds.latitude < bounds[3])
-            )
+            # Convert from Web Mercator to lat/lon if necessary
+            # Check if bounds are in Web Mercator (large values)
+            if abs(bounds[0]) > 180:
+                # Convert Web Mercator to lat/lon
+                lat_min, lon_min = convert_EPSG(
+                    lat=bounds[1], lon=bounds[0], mercator_to_coord=True
+                )
+                lat_max, lon_max = convert_EPSG(
+                    lat=bounds[3], lon=bounds[2], mercator_to_coord=True
+                )
+
+                MVBS_ds_in_track_box = self.MVBS_ds.where(
+                    (self.MVBS_ds.longitude > lon_min)
+                    & (self.MVBS_ds.latitude > lat_min)
+                    & (self.MVBS_ds.longitude < lon_max)
+                    & (self.MVBS_ds.latitude < lat_max)
+                )
+            else:
+                # Already in lat/lon coordinates
+                MVBS_ds_in_track_box = self.MVBS_ds.where(
+                    (self.MVBS_ds.longitude > bounds[0])
+                    & (self.MVBS_ds.latitude > bounds[1])
+                    & (self.MVBS_ds.longitude < bounds[2])
+                    & (self.MVBS_ds.latitude < bounds[3])
+                )
 
         return MVBS_ds_in_track_box
 
@@ -530,6 +571,16 @@ class Echoshader(param.Parameterized):
         resetting : boolean
             The value indicating a reset event.
         """
+        # Reset to full dataset
+        self.MVBS_ds_in_track_box = self.MVBS_ds
+
+        # Clear the track box stream bounds if it exists
+        if hasattr(self, "track_box_stream"):
+            self.track_box_stream.update(bounds=None)
+        if hasattr(self, "tile_box_stream"):
+            self.tile_box_stream.update(bounds=None)
+
+        # Trigger update
         self.update_track_flag.event()
 
     def _update_track_box(self, bounds):
@@ -590,9 +641,16 @@ class Echoshader(param.Parameterized):
 
         self.tile_box_stream = get_box_stream(tile, center)
 
-        reset_stream = holoviews.streams.PlotReset(source=tile)
+        # Add subscriber for tile box selection
+        self.tile_box_stream.add_subscriber(self._update_track_box)
 
-        reset_stream.add_subscriber(self._update_track_reset)
+        # Clean up old reset stream if it exists
+        if self._track_reset_stream:
+            self._track_reset_stream.clear()
+
+        # Create new reset stream
+        self._track_reset_stream = holoviews.streams.PlotReset(source=tile)
+        self._track_reset_stream.add_subscriber(self._update_track_reset)
 
         tile_bounds = get_box_plot(self.tile_box_stream)
 
@@ -620,7 +678,9 @@ class Echoshader(param.Parameterized):
 
         self.track_box_stream.add_subscriber(self._update_track_box)
 
-        self._update_track_box((left, bottom, right, top))
+        # Set initial bounds after reset
+        initial_bounds = (left, bottom, right, top)
+        self._update_track_box(initial_bounds)
 
         return track
 

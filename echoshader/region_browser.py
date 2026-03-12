@@ -257,8 +257,6 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
 
     def save_changes(event):
         """Save edited polygon to DataFrame"""
-        nonlocal poly_draw_stream, sample_df
-
         if poly_draw_stream is None:
             status.object = "⚠️ No edits to save"
             return
@@ -286,8 +284,6 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
 
     def export_csv(event):
         """Export edited regions to CSV"""
-        nonlocal sample_df
-
         try:
             from datetime import datetime
 
@@ -320,8 +316,6 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
 
     def reset_edits(event):
         """Reset to original polygon"""
-        nonlocal sample_df, original_df
-
         try:
             selected_id = region_dropdown.value
             idx = sample_df[sample_df["region_id"] == selected_id].index[0]
@@ -341,7 +335,7 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
 
     def load_csv_file(event):
         """Load regions from uploaded CSV"""
-        nonlocal sample_df, region_dropdown
+        nonlocal sample_df
 
         if load_btn.value is None:
             status.object = "⚠️ No file selected"

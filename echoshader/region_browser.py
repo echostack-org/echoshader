@@ -255,8 +255,10 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
         if is_edit:
             status.object = (
                 "**Edit Mode** - "
-                "**PolyDraw:** Click to add vertices, double-click last vertex to finish. Drag to move entire polygon. "
-                "**PolyEdit:** Drag vertices to reposition, double-click a vertex to delete it. "
+                "**PolyDraw:** Click to add vertices, double-click last "
+                "vertex to finish. Drag to move entire polygon. "
+                "**PolyEdit:** Drag vertices to reposition, double-click "
+                "a vertex to delete it. "
                 "**Reset Region** restores the original."
             )
             status.styles = {
@@ -413,7 +415,7 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
 
     def load_csv_file(event):
         """Load regions from uploaded CSV"""
-        nonlocal sample_df
+        nonlocal sample_df, baseline_df
 
         if load_btn.value is None:
             status.object = "No file selected. Please choose a CSV file to load."

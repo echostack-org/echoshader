@@ -103,18 +103,19 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
                 if region_start < echogram_start or region_end > echogram_end:
                     return (
                         False,
-                        f"Region {region_id} times "
-                        f"({region_start} to {region_end}) "
-                        f"outside echogram range "
-                        f"({echogram_start} to {echogram_end})",
+                        f"Validation error: Region {region_id} times "
+                        f"({region_start} to {region_end}) fall outside the valid "
+                        f"echogram range ({echogram_start} to {echogram_end}).",
                     )
 
             return True, "Valid"
 
         except Exception as e:
-            return False, f"Validation error: {e}"
+            return False, f"Validation processing error: {e}"
 
-    original_df = regions_df.copy()
+    # Store baseline for reset functionality
+    baseline_df = regions_df.copy()
+
     sample_df = regions_df.copy()
 
     poly_draw_stream = None
@@ -125,7 +126,7 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
     background_cache = {}
 
     if cache_backgrounds:
-        print("⏳ Pre-caching backgrounds...")
+        print("Pre-caching backgrounds...")
 
         for region_id in sample_df["region_id"]:
             current_df = sample_df[sample_df["region_id"] == region_id]
@@ -155,11 +156,11 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
                             ds_slice.channel.values.tolist()
                         )()
                         background_cache[region_id] = background
-                        print(f"  ✓ Region {region_id}")
+                        print(f"  Processed Region {region_id}")
                 except Exception:
                     pass
 
-        print(f"✅ Cached {len(background_cache)} backgrounds")
+        print(f"Cached {len(background_cache)} backgrounds successfully.")
 
     region_ids = list(sample_df["region_id"])
 
@@ -175,31 +176,30 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
         name="Select Region", options=region_ids, value=region_ids[0], width=200
     )
 
-    prev_btn = pn.widgets.Button(name="◀ Previous", button_type="light", width=95)
-
-    next_btn = pn.widgets.Button(name="Next ▶", button_type="light", width=95)
-
-    save_btn = pn.widgets.Button(
-        name="💾 Save Changes", button_type="success", width=200
-    )
+    prev_btn = pn.widgets.Button(name="Previous", button_type="light", width=95)
+    next_btn = pn.widgets.Button(name="Next", button_type="light", width=95)
 
     reset_btn = pn.widgets.Button(
-        name="🔄 Reset Edits", button_type="warning", width=200
+        name="Reset Region", button_type="warning", width=200
+    )
+
+    apply_btn = pn.widgets.Button(
+        name="Apply Edit", button_type="success", width=200
     )
 
     export_btn = pn.widgets.Button(
-        name="📥 Export CSV", button_type="primary", width=200
+        name="Export to CSV", button_type="primary", width=200
     )
 
-    load_btn = pn.widgets.FileInput(name="📂 Load CSV", accept=".csv", width=200)
+    load_btn = pn.widgets.FileInput(name="Load CSV", accept=".csv", width=200)
 
     status = pn.pane.Markdown(
-        "🟢 **Browse Mode** - View Only",
+        "**Browse Mode** - View Only",
         styles={
-            "background": "#e8f5e9",
+            "background": "#e3f2fd",
             "padding": "10px 15px",
-            "border-radius": "20px",
-            "border-left": "4px solid #4caf50",
+            "border-radius": "8px",
+            "border-left": "4px solid #2196f3",
             "margin": "10px 0",
         },
     )
@@ -209,11 +209,31 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
             "### Actions",
             styles={"font-size": "14px", "color": "#666", "margin-bottom": "5px"},
         ),
+        pn.pane.Markdown(
+            """
+            **Editing Workflow:**
+            1. Edit polygon vertices
+            2. Click "Apply Edit"
+            3. Edit other regions as needed
+            4. Click "Export to CSV" to save
+            
+            ⚠️ *Changes are not saved to disk until exported!*
+            """,
+            styles={
+                "font-size": "11px",
+                "color": "#666",
+                "background": "#fff3cd",
+                "padding": "8px",
+                "border-radius": "5px",
+                "margin-bottom": "10px",
+                "border-left": "3px solid #ffc107"
+            }
+        ),
         load_btn,
         pn.Spacer(height=5),
-        save_btn,
-        pn.Spacer(height=5),
         reset_btn,
+        pn.Spacer(height=5),
+        apply_btn,
         pn.Spacer(height=5),
         export_btn,
         visible=False,
@@ -230,35 +250,36 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
     def on_mode_change(event):
         """Toggle between Browse and Edit modes"""
         is_edit = event.new == "Edit"
-
         actions_section.visible = is_edit
 
         if is_edit:
             status.object = (
-                "🔴 **Edit Mode** - Click to add | "
-                "Drag to move | Double-click to delete"
+                "**Edit Mode** - "
+                "**PolyDraw:** Click to add vertices, double-click last vertex to finish. Drag to move entire polygon. "
+                "**PolyEdit:** Drag vertices to reposition, double-click a vertex to delete it. "
+                "**Reset Region** restores the original."
             )
             status.styles = {
-                "background": "#ffebee",
+                "background": "#e3f2fd",
                 "padding": "10px 15px",
-                "border-radius": "20px",
-                "border-left": "4px solid #f44336",
+                "border-radius": "8px",
+                "border-left": "4px solid #2196f3",
                 "margin": "10px 0",
             }
         else:
-            status.object = "🟢 **Browse Mode** - View Only"
+            status.object = "**Browse Mode** - View Only"
             status.styles = {
-                "background": "#e8f5e9",
+                "background": "#e3f2fd",
                 "padding": "10px 15px",
-                "border-radius": "20px",
-                "border-left": "4px solid #4caf50",
+                "border-radius": "8px",
+                "border-left": "4px solid #2196f3",
                 "margin": "10px 0",
             }
 
-    def save_changes(event):
-        """Save edited polygon to DataFrame"""
+    def apply_edits(event):
+        """Apply edited polygon to DataFrame in memory"""
         if poly_draw_stream is None:
-            status.object = "⚠️ No edits to save"
+            status.object = "No edits to apply. Please ensure a region is selected."
             return
 
         try:
@@ -277,10 +298,79 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
             sample_df.at[idx, "depth"] = depths_arr
 
             status.object = (
-                f"✅ **Saved!** Region {selected_id} " f"({len(times_dt)} vertices)"
+                f"**Applied!** Region {selected_id} updated. "
+                "Export to CSV to save to disk."
             )
+            status.styles = {
+                "background": "#e8f5e9",
+                "padding": "10px 15px",
+                "border-radius": "8px",
+                "border-left": "4px solid #4caf50",
+                "margin": "10px 0",
+            }
         except Exception as e:
-            status.object = f"❌ Error: {e}"
+            status.object = (
+                f"Failed to apply edits to Region {selected_id}. "
+                f"Please check polygon format: {e}"
+            )
+            status.styles = {
+                "background": "#ffebee",
+                "padding": "10px 15px",
+                "border-radius": "8px",
+                "border-left": "4px solid #f44336",
+                "margin": "10px 0",
+            }
+
+    def reset_region(event):
+        """Reset current region to baseline version"""
+        nonlocal baseline_df
+        
+        try:
+            selected_id = region_dropdown.value
+            
+            # Find baseline version
+            baseline_row = baseline_df[baseline_df["region_id"] == selected_id]
+            
+            if baseline_row.empty:
+                status.object = f"No baseline found for Region {selected_id}."
+                status.styles = {
+                    "background": "#ffebee",
+                    "padding": "10px 15px",
+                    "border-radius": "8px",
+                    "border-left": "4px solid #f44336",
+                    "margin": "10px 0",
+                }
+                return
+            
+            # Reset to baseline
+            idx = sample_df[sample_df["region_id"] == selected_id].index[0]
+            sample_df.at[idx, "time"] = baseline_row.iloc[0]["time"].copy()
+            sample_df.at[idx, "depth"] = baseline_row.iloc[0]["depth"].copy()
+            
+            # Force UI refresh
+            region_dropdown.param.trigger('value')
+            
+            status.object = f"**Reset!** Region {selected_id} restored to original."
+            status.styles = {
+                "background": "#e8f5e9",
+                "padding": "10px 15px",
+                "border-radius": "8px",
+                "border-left": "4px solid #4caf50",
+                "margin": "10px 0",
+            }
+            
+            print(f"Reset Region {selected_id} to baseline")
+            
+        except Exception as e:
+            status.object = f"Reset failed: {e}"
+            status.styles = {
+                "background": "#ffebee",
+                "padding": "10px 15px",
+                "border-radius": "8px",
+                "border-left": "4px solid #f44336",
+                "margin": "10px 0",
+            }
+            print(f"Reset error: {e}")
 
     def export_csv(event):
         """Export edited regions to CSV"""
@@ -297,7 +387,8 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
                 times = row["time"]
                 depths = row["depth"]
 
-                time_str = "[" + ", ".join([str(t) for t in times]) + "]"
+                # Add single quotes around timestamps to avoid leading zero errors
+                time_str = "[" + ", ".join([f"'{str(t)}'" for t in times]) + "]"
                 depth_str = "[" + ", ".join([str(d) for d in depths]) + "]"
 
                 export_data.append(
@@ -307,42 +398,30 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
             export_df = pd.DataFrame(export_data)
             export_df.to_csv(output_filename, index=False)
 
-            status.object = f"✅ **Exported!** Saved as: {output_filename}"
-            print(f"✅ CSV exported to: {output_filename}")
-
-        except Exception as e:
-            status.object = f"❌ Export failed: {e}"
-            print(f"❌ Export error: {e}")
-
-    def reset_edits(event):
-        """Reset to original polygon"""
-        try:
-            selected_id = region_dropdown.value
-            idx = sample_df[sample_df["region_id"] == selected_id].index[0]
-
-            sample_df.at[idx, "time"] = original_df.at[idx, "time"].copy()
-            sample_df.at[idx, "depth"] = original_df.at[idx, "depth"].copy()
-
             status.object = (
-                f"🔄 **Reset** Region {selected_id} - "
-                f"Navigate away and back to see original"
+                f"**Exported Successfully!** All {len(sample_df)} regions "
+                f"saved to: {output_filename}"
             )
-            print(f"✅ Reset Region {selected_id} to original")
+            print(f"CSV exported to: {output_filename}")
 
         except Exception as e:
-            status.object = f"❌ Reset error: {e}"
-            print(f"❌ Reset error: {e}")
+            status.object = (
+                f"Export failed. Please ensure you have write permissions "
+                f"in this directory: {e}"
+            )
+            print(f"Export error: {e}")
 
     def load_csv_file(event):
         """Load regions from uploaded CSV"""
         nonlocal sample_df
 
         if load_btn.value is None:
-            status.object = "⚠️ No file selected"
+            status.object = "No file selected. Please choose a CSV file to load."
             return
 
         try:
             import io
+            import ast
 
             csv_data = io.BytesIO(load_btn.value)
             loaded_df = pd.read_csv(csv_data)
@@ -350,43 +429,80 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
             required_columns = ["region_id", "time", "depth"]
             if not all(col in loaded_df.columns for col in required_columns):
                 status.object = (
-                    f"❌ Invalid CSV: Missing required columns. "
-                    f"Need: {required_columns}"
+                    f"Invalid CSV format. Missing required columns. "
+                    f"Required: {required_columns}"
                 )
                 return
 
+            parsed_times = []
+            parsed_depths = []
+
             for idx, row in loaded_df.iterrows():
                 try:
-                    time_str = row["time"].strip("[]")
-                    time_list = [t.strip() for t in time_str.split(",")]
-                    loaded_df.at[idx, "time"] = np.array(
-                        time_list, dtype="datetime64[ns]"
-                    )
+                    # Try ast.literal_eval first (works for CSVs with quotes)
+                    time_list = ast.literal_eval(str(row["time"]))
+                    depth_list = ast.literal_eval(str(row["depth"]))
 
-                    depth_str = row["depth"].strip("[]")
-                    depth_list = [float(d.strip()) for d in depth_str.split(",")]
-                    loaded_df.at[idx, "depth"] = np.array(depth_list, dtype=np.float64)
+                    parsed_times.append(np.array(time_list, dtype="datetime64[ns]"))
+                    parsed_depths.append(np.array(depth_list, dtype=np.float64))
 
-                except Exception as e:
-                    status.object = f"❌ Parse error in row {idx}: {e}"
-                    return
+                except Exception:
+                    # FALLBACK: For old CSVs without quotes, parse manually
+                    try:
+                        time_str = str(row["time"]).strip("[]")
+                        time_list = [t.strip(" '\"") for t in time_str.split(",")]
+                        parsed_times.append(np.array(time_list, dtype="datetime64[ns]"))
+
+                        depth_str = str(row["depth"]).strip("[]")
+                        depth_list = [float(d.strip()) for d in depth_str.split(",")]
+                        parsed_depths.append(np.array(depth_list, dtype=np.float64))
+                    except Exception as fallback_e:
+                        status.object = (
+                            f"Parse error in row {idx}. Please check data format "
+                            f"matches Echoregions standard: {fallback_e}"
+                        )
+                        return
+
+            # Apply parsed arrays all at once
+            loaded_df["time"] = parsed_times
+            loaded_df["depth"] = parsed_depths
 
             is_valid, message = validate_loaded_regions(loaded_df, ds)
             if not is_valid:
-                status.object = f"❌ Validation failed: {message}"
+                status.object = f"**Validation Failed:** {message}"
+                status.styles = {
+                    "background": "#ffebee",
+                    "padding": "10px 15px",
+                    "border-radius": "8px",
+                    "border-left": "4px solid #f44336",
+                    "margin": "10px 0",
+                }
                 return
 
             sample_df = loaded_df.copy()
+            
+            # Update baseline to loaded CSV (new reset point)
+            baseline_df = loaded_df.copy()
+            
             new_region_ids = list(sample_df["region_id"])
             region_dropdown.options = new_region_ids
             region_dropdown.value = new_region_ids[0]
 
-            status.object = f"✅ **Loaded** {len(loaded_df)} regions from CSV"
-            print(f"✅ Loaded {len(loaded_df)} regions successfully")
+            status.object = (
+                f"**Loaded Successfully!** {len(loaded_df)} regions imported from CSV."
+            )
+            status.styles = {
+                "background": "#e8f5e9",
+                "padding": "10px 15px",
+                "border-radius": "8px",
+                "border-left": "4px solid #4caf50",
+                "margin": "10px 0",
+            }
+            print(f"Loaded {len(loaded_df)} regions successfully.")
 
         except Exception as e:
-            status.object = f"❌ Load error: {e}"
-            print(f"❌ Load error: {e}")
+            status.object = f"Failed to load file: {e}"
+            print(f"Load error: {e}")
 
     @pn.depends(region_dropdown.param.value, mode_selector.param.value)
     def get_region_view(selected_id, mode):
@@ -395,14 +511,47 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
 
         current_df = sample_df[sample_df["region_id"] == selected_id]
         if current_df.empty:
-            return pn.pane.Markdown("⚠️ No data")
+            return pn.pane.Markdown("No data available for this region.")
 
         parsed = parse_polygons_from_df(current_df)
-        if not parsed or selected_id not in background_cache:
-            return pn.pane.Markdown("⚠️ No background")
+        if not parsed:
+            return pn.pane.Markdown("No polygon data for this region.")
 
+        # Check if background is cached, if not, generate it on-demand
+        if selected_id not in background_cache:
+            try:
+                time_values = np.array(parsed[0]["ping_time"])
+                start_t = pd.to_datetime(time_values.min(), unit="ms")
+                end_t = pd.to_datetime(time_values.max(), unit="ms")
+                buffer = pd.Timedelta(minutes=5)
+                ds_slice = ds.sel(ping_time=slice(start_t - buffer, end_t + buffer))
+
+                if len(ds_slice.ping_time) > 0:
+                    ds_slice = ds_slice.assign_coords(
+                        {
+                            "ping_time": (
+                                ("ping_time",),
+                                ds_slice["ping_time"].data.astype("int64") // 10**6,
+                            )
+                        }
+                    )
+                    if "depth" in ds_slice.dims:
+                        ds_slice = ds_slice.rename({"depth": "echo_range"})
+
+                    background = ds_slice.eshader.echogram(
+                        ds_slice.channel.values.tolist()
+                    )()
+                    background_cache[selected_id] = background
+                    print(f"Cached background for Region {selected_id}")
+                else:
+                    return pn.pane.Markdown("No echogram data in this time range.")
+            except Exception as e:
+                return pn.pane.Markdown(f"Error generating background: {e}")
+
+        # Retrieve cached background (fast)
         background = background_cache[selected_id]
 
+        # Generate polygon (only happens on first view of this region+mode)
         poly = hv.Polygons(
             [
                 {
@@ -417,6 +566,7 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
         ).opts(color="red", fill_alpha=0.3, line_width=2)
 
         if mode == "Edit":
+            # Attach streams - they automatically add tools when source=poly is set
             poly_draw_stream = PolyDraw(
                 source=poly,
                 drag=True,
@@ -431,19 +581,21 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
                 shared=True,
             )
 
-        return background * poly
+        # Create composed plot (streams auto-attach in Edit mode)
+        plot = background * poly
+        return plot
 
     prev_btn.on_click(update_nav)
     next_btn.on_click(update_nav)
     mode_selector.param.watch(on_mode_change, "value")
-    save_btn.on_click(save_changes)
+    reset_btn.on_click(reset_region)
+    apply_btn.on_click(apply_edits)
     export_btn.on_click(export_csv)
-    reset_btn.on_click(reset_edits)
     load_btn.param.watch(load_csv_file, "value")
 
     sidebar = pn.Column(
         pn.pane.Markdown(
-            "## 🎛️ Controls", styles={"color": "#1976d2", "margin-bottom": "15px"}
+            "## Controls", styles={"color": "#1976d2", "margin-bottom": "15px"}
         ),
         pn.pane.Markdown(
             "### Mode",
@@ -471,7 +623,7 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
 
     main_content = pn.Column(
         pn.pane.Markdown(
-            "# 🐟 Hake School Region Browser",
+            "# Hake School Region Browser",
             styles={"color": "#1976d2", "margin-bottom": "5px"},
         ),
         pn.pane.Markdown(

@@ -179,13 +179,9 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
     prev_btn = pn.widgets.Button(name="Previous", button_type="light", width=95)
     next_btn = pn.widgets.Button(name="Next", button_type="light", width=95)
 
-    reset_btn = pn.widgets.Button(
-        name="Reset Region", button_type="warning", width=200
-    )
+    reset_btn = pn.widgets.Button(name="Reset Region", button_type="warning", width=200)
 
-    apply_btn = pn.widgets.Button(
-        name="Apply Edit", button_type="success", width=200
-    )
+    apply_btn = pn.widgets.Button(name="Apply Edit", button_type="success", width=200)
 
     export_btn = pn.widgets.Button(
         name="Export to CSV", button_type="primary", width=200
@@ -216,7 +212,7 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
             2. Click "Apply Edit"
             3. Edit other regions as needed
             4. Click "Export to CSV" to save
-            
+
             ⚠️ *Changes are not saved to disk until exported!*
             """,
             styles={
@@ -226,8 +222,8 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
                 "padding": "8px",
                 "border-radius": "5px",
                 "margin-bottom": "10px",
-                "border-left": "3px solid #ffc107"
-            }
+                "border-left": "3px solid #ffc107",
+            },
         ),
         load_btn,
         pn.Spacer(height=5),
@@ -327,10 +323,10 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
         """Reset current region to baseline version"""
         try:
             selected_id = region_dropdown.value
-            
+
             # Find baseline version
             baseline_row = baseline_df[baseline_df["region_id"] == selected_id]
-            
+
             if baseline_row.empty:
                 status.object = f"No baseline found for Region {selected_id}."
                 status.styles = {
@@ -341,15 +337,15 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
                     "margin": "10px 0",
                 }
                 return
-            
+
             # Reset to baseline
             idx = sample_df[sample_df["region_id"] == selected_id].index[0]
             sample_df.at[idx, "time"] = baseline_row.iloc[0]["time"].copy()
             sample_df.at[idx, "depth"] = baseline_row.iloc[0]["depth"].copy()
-            
+
             # Force UI refresh
-            region_dropdown.param.trigger('value')
-            
+            region_dropdown.param.trigger("value")
+
             status.object = f"**Reset!** Region {selected_id} restored to original."
             status.styles = {
                 "background": "#e8f5e9",
@@ -358,9 +354,9 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
                 "border-left": "4px solid #4caf50",
                 "margin": "10px 0",
             }
-            
+
             print(f"Reset Region {selected_id} to baseline")
-            
+
         except Exception as e:
             status.object = f"Reset failed: {e}"
             status.styles = {
@@ -420,8 +416,8 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
             return
 
         try:
-            import io
             import ast
+            import io
 
             csv_data = io.BytesIO(load_btn.value)
             loaded_df = pd.read_csv(csv_data)
@@ -480,10 +476,10 @@ def region_browser(ds, regions_df, cache_backgrounds=True):
                 return
 
             sample_df = loaded_df.copy()
-            
+
             # Update baseline to loaded CSV (new reset point)
             baseline_df = loaded_df.copy()
-            
+
             new_region_ids = list(sample_df["region_id"])
             region_dropdown.options = new_region_ids
             region_dropdown.value = new_region_ids[0]

@@ -3,12 +3,12 @@ hvplot
 ipykernel
 geoviews
 netCDF4>1.6
-numpy>=1.26.4,<3
+numpy<2
 pandas
 pyvista[jupyter]
 plotly
 xarray>=2024.11.0
-zarr==2.16.1
+zarr>=3
 panel
 jupyter_bokeh
 echopype

@@ -18,7 +18,7 @@ jobs:
     if: github.repository == 'OSOceanAcoustics/echoshader'
     steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         # fetch all history so that setuptools-scm works
         fetch-depth: 0

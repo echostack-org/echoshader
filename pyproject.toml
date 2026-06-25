@@ -1,10 +1,136 @@
 [build-system]
 requires = [
-    "setuptools>=61",
-    "wheel",
-    "setuptools_scm[toml]>=7",
+    "setuptools>=68",
+    "setuptools_scm[toml]>=8",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "echoshader"
+dynamic = ["version"]
+description = "Open Source Python package for building ocean sonar data visualizations."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+
+authors = [
+    { name = "Dingrui Lei", email = "leidingrui426@gmail.com" },
+]
+
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+dependencies = [
+    "aiohttp",
+    "dask",
+    "echopype",
+    "fsspec",
+    "geoviews",
+    "hvplot",
+    "jupyter_bokeh",
+    "netCDF4>1.6",
+    "numpy",
+    "pandas",
+    "panel",
+    "plotly",
+    "pyvista[jupyter]",
+    "xarray>=2024.11.0",
+    "zarr>=3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "ipykernel",
+    "isort",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+]
+
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-flake8",
+    "pytest-mock",
+    "pytest-xdist",
+]
+
+lint = [
+    "black",
+    "check-manifest",
+    "codespell",
+    "flake8",
+    "flake8-builtins",
+    "flake8-comprehensions",
+    "flake8-mutable",
+    "flake8-print",
+    "isort",
+    "mypy",
+    "numpydoc",
+    "pre-commit",
+    "pylint",
+]
+
+docs = [
+    "docutils<0.18",
+    "jupyter-book",
+    "numpydoc",
+    "sphinx",
+    "sphinx-automodapi",
+    "sphinx_rtd_theme",
+    "sphinxcontrib-mermaid",
+]
+
+all = [
+    "black",
+    "check-manifest",
+    "codespell",
+    "docutils<0.18",
+    "flake8",
+    "flake8-builtins",
+    "flake8-comprehensions",
+    "flake8-mutable",
+    "flake8-print",
+    "ipykernel",
+    "isort",
+    "jupyter-book",
+    "mypy",
+    "numpydoc",
+    "pre-commit",
+    "pylint",
+    "pytest",
+    "pytest-cov",
+    "pytest-flake8",
+    "pytest-mock",
+    "pytest-xdist",
+    "sphinx",
+    "sphinx-automodapi",
+    "sphinx_rtd_theme",
+    "sphinxcontrib-mermaid",
+]
+
+[project.urls]
+Homepage = "https://github.com/echostack-org/echoshader"
+Repository = "https://github.com/echostack-org/echoshader"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["echoshader*"]
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0"

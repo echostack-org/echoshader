@@ -1,12 +1,113 @@
 [build-system]
 requires = [
-    "setuptools>=61",
-    "wheel",
-    "setuptools_scm[toml]>=7",
+    "setuptools>=68",
+    "setuptools_scm[toml]>=8",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "echoshader"
+dynamic = ["version"]
+description = "Open Source Python package for building ocean sonar data visualizations."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+
+authors = [
+    { name = "Dingrui Lei", email = "leidingrui426@gmail.com" },
+]
+
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+dependencies = [
+    "aiohttp",
+    "dask",
+    "echopype",
+    "fsspec",
+    "geoviews",
+    "hvplot",
+    "jupyter_bokeh",
+    "netCDF4>1.6",
+    "numpy",
+    "pandas",
+    "panel",
+    "plotly",
+    "pyvista[jupyter]",
+    "xarray>=2024.11.0",
+    "zarr>=3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "pytest-xdist",
+]
+
+lint = [
+    "check-manifest",
+    "codespell",
+    "mypy",
+    "numpydoc",
+    "pre-commit",
+    "pylint",
+    "ruff",
+]
+
+docs = [
+    "docutils<0.18",
+    "jupyter-book",
+    "numpydoc",
+    "sphinx",
+    "sphinx-automodapi",
+    "sphinx_rtd_theme",
+    "sphinxcontrib-mermaid",
+]
+
+[project.urls]
+Homepage = "https://github.com/echostack-org/echoshader"
+Repository = "https://github.com/echostack-org/echoshader"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["echoshader*"]
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0"
 local_scheme = "node-and-date"
 write_to = "echoshader/_echoshader_version.py"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+ignore = ["E722", "E203", "T201"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["echoshader"]
+
+[tool.ruff.format]
+exclude = ["*.ipynb", "**/*.ipynb"]

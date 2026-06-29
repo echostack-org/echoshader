@@ -77,9 +77,7 @@ def single_echogram(
     return echogram
 
 
-def convert_to_color(
-    MVBS_ds: xarray, channel_sel: str, th_bottom: float, th_top: float
-):
+def convert_to_color(MVBS_ds: xarray, channel_sel: str, th_bottom: float, th_top: float):
     """
     Convert backscatter data to a color array based on threshold values.
 
@@ -119,12 +117,8 @@ def convert_to_color(
     )
     """
     da_color = MVBS_ds.sel(channel=channel_sel)
-    da_color = da_color.where(
-        da_color <= th_top, other=th_top
-    )  # set to ceiling at the top
-    da_color = da_color.where(
-        da_color >= th_bottom, other=th_bottom
-    )  # threshold at the bottom
+    da_color = da_color.where(da_color <= th_top, other=th_top)  # set to ceiling at the top
+    da_color = da_color.where(da_color >= th_bottom, other=th_bottom)  # threshold at the bottom
     da_color = da_color.expand_dims("channel")
     da_color = (da_color - th_bottom) / (th_top - th_bottom)
     da_color = numpy.squeeze(da_color.Sv.data).transpose()
@@ -198,9 +192,7 @@ def tricolor_echogram(
     rgb_ch = {"R": None, "G": None, "B": None}
 
     for ch, color in rgb_map.items():
-        rgb_ch[color] = convert_to_color(
-            MVBS_ds, channel_sel=ch, th_bottom=vmin, th_top=vmax
-        )
+        rgb_ch[color] = convert_to_color(MVBS_ds, channel_sel=ch, th_bottom=vmin, th_top=vmax)
 
     rgb = holoviews.RGB(
         (

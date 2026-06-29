@@ -4,6 +4,7 @@ exclude: |
     notebooks/|
     docs/source/conf.py
   )
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -16,34 +17,15 @@ repos:
       - id: pretty-format-json
         args: ["--autofix", "--indent=2", "--no-sort-keys"]
 
-  - repo: https://github.com/PyCQA/isort
-    rev: 9.0.0a3
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.2
     hooks:
-      - id: isort
-        args: ["--profile", "black", "--filter-files"]
-
-  - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 26.5.1
-    hooks:
-      - id: black
-
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.3.0
-    hooks:
-      - id: flake8
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.49.0
     hooks:
       - id: markdownlint
         args: ["**/**/*.md", "--ignore", "docs/source/gsoc", "--enable", "MD013", "--disable", "MD043", "line_length", "--fix"]
-        # uncomment the below line and comment out the above line to check the lines over 90
-#        args: ["**/**/*.md", "--enable", "MD013", "--disable", "MD043", "--fix"]
-
-  # 09/19/2022 Don.S.: Comment out and not use codespell at the moment
-  # doesn't seem to be ignoring .ipynb when specified...
-  # - repo: https://github.com/codespell-project/codespell
-  #   rev: v2.1.0
-  #   hooks:
-  #     - id: codespell
-  #       args: ["-w", "docs/source", "echoshader"]

@@ -15,7 +15,7 @@ jobs:
   build-artifact:
     name: Build echoshader package
     runs-on: ubuntu-22.04
-    if: github.repository == 'OSOceanAcoustics/echoshader'
+    if: github.repository == 'echostack-org/echoshader'
     steps:
     - name: Checkout
       uses: actions/checkout@v7

@@ -121,14 +121,11 @@ class Echoshader(param.Parameterized):
             else:
                 if actual != expected:
                     raise ValueError(
-                        f"'Sv' dimension at index {i} "
-                        f"must be '{expected}', but got '{actual}'."
+                        f"'Sv' dimension at index {i} must be '{expected}', but got '{actual}'."
                     )
 
     def _init_widget(self):
-        self.colormap = panel.widgets.LiteralInput(
-            name="Colormap", value="jet", type=(str, list)
-        )
+        self.colormap = panel.widgets.LiteralInput(name="Colormap", value="jet", type=(str, list))
 
         self.Sv_range_slider = panel.widgets.EditableRangeSlider(
             name="Sv Range Slider",
@@ -138,9 +135,7 @@ class Echoshader(param.Parameterized):
             step=0.01,
         )
 
-        self.tile_select = panel.widgets.Select(
-            name="Map Tile Select", value="OSM", options=tiles
-        )
+        self.tile_select = panel.widgets.Select(name="Map Tile Select", value="OSM", options=tiles)
 
         self.channel_select = panel.widgets.Select(
             name="Channel Select", options=self.MVBS_ds.channel.values.tolist()
@@ -249,9 +244,7 @@ class Echoshader(param.Parameterized):
 
         if rgb_composite is True:
             if channel is None or len(channel) != 3:
-                raise ValueError(
-                    "Must have exactly 3 frequency channels for tricolor echogram."
-                )
+                raise ValueError("Must have exactly 3 frequency channels for tricolor echogram.")
 
             self.tri_channel = channel
 

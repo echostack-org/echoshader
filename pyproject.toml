@@ -108,3 +108,6 @@ ignore = ["E722", "E203", "T201"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["echoshader"]
+
+[tool.ruff.format]
+exclude = ["*.ipynb", "**/*.ipynb"]

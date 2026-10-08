@@ -4,7 +4,7 @@ import numpy
 from .utils import gram_opts
 
 
-def get_box_stream(source_pic, bounds: tuple = None):
+def get_box_stream(source_pic, bounds: tuple | None = None):
     """
     Get a Holoviews BoundsXY stream for a source plot with optional default bounds.
 

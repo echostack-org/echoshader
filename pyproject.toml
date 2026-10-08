@@ -75,11 +75,20 @@ lint = [
 ]
 
 docs = [
-    "docutils<0.18",
     "jupyter-book",
+    "linkify-it-py",
+    "myst-nb",
     "numpydoc",
     "sphinx",
     "sphinx-automodapi",
+    "sphinx-comments",
+    "sphinx-copybutton",
+    "sphinx-external-toc",
+    "sphinx-panels",
+    "sphinx-thebe",
+    "sphinx-togglebutton",
+    "sphinx_book_theme",
+    "sphinx_jupyterbook_latex",
     "sphinx_rtd_theme",
     "sphinxcontrib-mermaid",
 ]

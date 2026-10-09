@@ -7,7 +7,7 @@ import xarray
 def curtain_plot_plotly(
     MVBS_ds: xarray.Dataset,
     cmap: str | list[str] = "jet",
-    clim: tuple = None,
+    clim: tuple | None = None,
     ratio: float = 0.001,
     width: int = 800,
     height: int = 600,
@@ -40,7 +40,7 @@ def curtain_plot_plotly(
     lon = MVBS_ds.longitude.values[1:]
     lat = MVBS_ds.latitude.values[1:]
 
-    nsamples, ntraces = data.shape
+    nsamples, _ntraces = data.shape
 
     # Create coordinate grids
     depth_levels = numpy.arange(nsamples) * ratio
@@ -62,7 +62,7 @@ def curtain_plot_plotly(
         colorscale=colorscale,
         cmin=clim[0] if clim else data.min(),
         cmax=clim[1] if clim else data.max(),
-        colorbar=dict(title="Sv (dB)"),
+        colorbar={"title": "Sv (dB)"},
         showscale=True,
     )
 
@@ -72,7 +72,7 @@ def curtain_plot_plotly(
         y=lat,
         z=numpy.zeros_like(lon),
         mode="lines",
-        line=dict(color="white", width=4),
+        line={"color": "white", "width": 4},
         name="Vessel Path",
     )
 
@@ -83,16 +83,16 @@ def curtain_plot_plotly(
     fig.update_layout(
         width=width,
         height=height,
-        scene=dict(
-            xaxis_title="Longitude",
-            yaxis_title="Latitude",
-            zaxis_title="Depth (m)",
-            zaxis=dict(autorange="reversed"),
-            camera=dict(eye=dict(x=0.5, y=-2, z=0.5), up=dict(x=0, y=0, z=1)),
-            aspectmode="manual",
-            aspectratio=dict(x=2, y=1, z=0.5),
-        ),
-        margin=dict(r=20, l=10, b=10, t=10),
+        scene={
+            "xaxis_title": "Longitude",
+            "yaxis_title": "Latitude",
+            "zaxis_title": "Depth (m)",
+            "zaxis": {"autorange": "reversed"},
+            "camera": {"eye": {"x": 0.5, "y": -2, "z": 0.5}, "up": {"x": 0, "y": 0, "z": 1}},
+            "aspectmode": "manual",
+            "aspectratio": {"x": 2, "y": 1, "z": 0.5},
+        },
+        margin={"r": 20, "l": 10, "b": 10, "t": 10},
     )
 
     return fig
@@ -101,7 +101,7 @@ def curtain_plot_plotly(
 def curtain_plot_pyvista(
     MVBS_ds: xarray.Dataset,
     cmap: str | list[str] = "jet",
-    clim: tuple = None,
+    clim: tuple | None = None,
     ratio: float = 0.001,
 ):
     """

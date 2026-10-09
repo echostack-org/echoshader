@@ -10,7 +10,7 @@ name = "echoshader"
 dynamic = ["version"]
 description = "Open Source Python package for building ocean sonar data visualizations."
 readme = "README.md"
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.13,<3.15"
 license = { text = "MIT" }
 
 authors = [
@@ -25,9 +25,8 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Visualization",
 ]
 
@@ -76,11 +75,20 @@ lint = [
 ]
 
 docs = [
-    "docutils<0.18",
     "jupyter-book",
+    "linkify-it-py",
+    "myst-nb",
     "numpydoc",
     "sphinx",
     "sphinx-automodapi",
+    "sphinx-comments",
+    "sphinx-copybutton",
+    "sphinx-external-toc",
+    "sphinx-panels",
+    "sphinx-thebe",
+    "sphinx-togglebutton",
+    "sphinx_book_theme",
+    "sphinx_jupyterbook_latex",
     "sphinx_rtd_theme",
     "sphinxcontrib-mermaid",
 ]

@@ -127,7 +127,7 @@ def tricolor_echogram(
     MVBS_ds: xarray,
     vmin: float,
     vmax: float,
-    rgb_map: dict[str, str] = {},
+    rgb_map: dict[str, str] | None = None,
     vert_dim: str | None = "echo_range",
 ):
     """
@@ -179,6 +179,8 @@ def tricolor_echogram(
     Panel.Row(tricolor_plot)
     """
 
+    if rgb_map is None:
+        rgb_map = {}
     if ~gram_opts["RGB"]["invert_yaxis"]:
         gram_opts["RGB"]["invert_yaxis"] = True
 

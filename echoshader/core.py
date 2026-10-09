@@ -175,13 +175,13 @@ class Echoshader(param.Parameterized):
 
     def echogram(
         self,
-        channel: list[str] = None,
-        cmap: str | list[str] = None,
-        vmin: float = None,
-        vmax: float = None,
+        channel: list[str] | None = None,
+        cmap: str | list[str] | None = None,
+        vmin: float | None = None,
+        vmax: float | None = None,
         rgb_composite: bool = False,
         vert_dim: str | None = "echo_range",
-        opts=[],
+        opts=None,
     ):
         """
         Display echogram plots based on specified parameters.
@@ -226,6 +226,8 @@ class Echoshader(param.Parameterized):
         panel.Row(echogram)
         """
 
+        if opts is None:
+            opts = []
         if cmap is not None:
             self.colormap.value = cmap
 
@@ -445,9 +447,9 @@ class Echoshader(param.Parameterized):
 
     def track(
         self,
-        tile: str = None,
+        tile: str | None = None,
         control: bool = False,
-        opts=[],
+        opts=None,
     ):
         """
         Display track plots based on specified parameters.
@@ -478,6 +480,8 @@ class Echoshader(param.Parameterized):
 
         panel.Row(track)
         """
+        if opts is None:
+            opts = []
         if tile is not None:
             self.tile_select.value = tile
 
@@ -618,8 +622,8 @@ class Echoshader(param.Parameterized):
 
     def curtain(
         self,
-        channel: str = None,
-        ratio: float = None,
+        channel: str | None = None,
+        ratio: float | None = None,
         engine: str = "plotly",
         **opts,
     ):
@@ -731,9 +735,9 @@ class Echoshader(param.Parameterized):
 
     def hist(
         self,
-        bins: int = None,
-        overlay: bool = None,
-        opts=[],
+        bins: int | None = None,
+        overlay: bool | None = None,
+        opts=None,
     ):
         """
         Display histogram plots based on specified parameters.
@@ -766,6 +770,8 @@ class Echoshader(param.Parameterized):
 
         panel.Row(histogram)
         """
+        if opts is None:
+            opts = []
         if bins is not None:
             self.bin_size_input.value = bins
 
@@ -806,7 +812,7 @@ class Echoshader(param.Parameterized):
 
     def table(
         self,
-        opts=[],
+        opts=None,
     ):
         """
         Display data summary table.
@@ -827,6 +833,8 @@ class Echoshader(param.Parameterized):
 
         panel.Row(table)
         """
+        if opts is None:
+            opts = []
         self.table_opts = opts
 
         return self._table_plot

@@ -1,0 +1,231 @@
+app:
+  title: Echoshader
+  subtitle: Interactive acoustic data exploration
+  template: fast_list
+  sidebar_width: 420
+
+
+data:
+  survey:
+    type: netcdf
+    path: examples/data/concatenated_MVBS.nc
+
+
+selections:
+  focus: {}
+
+
+values:
+  rgb_red: "GPT 120 kHz 00907205a6d0 4-1 ES120-7C"
+  rgb_green: "GPT  38 kHz 009072058146 2-1 ES38B"
+  rgb_blue: "GPT  18 kHz 009072058c8d 1-1 ES18-11"
+
+
+controls:
+  rgb_red:
+    type: select
+    write: rgb_red
+    options_from:
+      data: survey
+      coord: channel
+    args:
+      name: Red channel
+
+  rgb_green:
+    type: select
+    write: rgb_green
+    options_from:
+      data: survey
+      coord: channel
+    args:
+      name: Green channel
+
+  rgb_blue:
+    type: select
+    write: rgb_blue
+    options_from:
+      data: survey
+      coord: channel
+    args:
+      name: Blue channel
+
+
+elements:
+  track:
+    type: track
+    data: survey
+
+    observe:
+      selection: focus
+      mode: highlight
+      projection: ping_time
+      highlight:
+        color: dodgerblue
+        size: 7
+
+    args:
+      tile: OpenTopoMap
+
+    opts:
+      width: 370
+      height: 350
+
+
+  echogram:
+    type: echogram
+    data: survey
+
+    observe:
+      selection: focus
+      mode: highlight
+      projection: ping_time
+      highlight:
+        color: dodgerblue
+        fill_alpha: 0.08
+        line_alpha: 0.9
+        line_width: 2
+
+    view:
+      max_pings: 5000
+      ping_dim: ping_time
+
+    args:
+      channel: null
+      vert_dim: echo_range
+
+    opts:
+      cmap: jet
+      width: 1000
+      height: 190
+
+
+  histogram:
+    type: hist
+    data: survey
+
+    observe:
+      selection: focus
+      mode: filter
+
+    args:
+      bins: 24
+      overlay: true
+
+    opts:
+      width: 1000
+      height: 280
+      tools:
+        - pan
+        - wheel_zoom
+        - reset
+
+
+  rgb_echogram:
+    type: tricolor_echogram
+    data: survey
+
+    observe:
+      selection: focus
+      mode: highlight
+      projection: ping_time
+      highlight:
+        color: dodgerblue
+        fill_alpha: 0.08
+        line_alpha: 0.9
+        line_width: 2
+
+      values:
+        channel:
+          - rgb_red
+          - rgb_green
+          - rgb_blue
+
+    view:
+      max_pings: 5000
+      ping_dim: ping_time
+
+    args:
+      vmin: -70
+      vmax: -36
+      vert_dim: echo_range
+
+    opts:
+      width: 1100
+      height: 650
+      tools:
+        - pan
+        - wheel_zoom
+        - reset
+
+
+components:
+  selection_summary:
+    type: selection_summary
+    data: survey
+    selection: focus
+
+    args:
+      ping_dim: ping_time
+
+  selection_metadata:
+    type: selection_metadata
+    data: survey
+    selection: focus
+
+    args:
+      var_name: Sv
+      ping_dim: ping_time
+
+
+interactions:
+  - type: point_select
+    source: track
+    source_element: Points
+    write: focus
+
+    args:
+      dim: ping_time
+      x: longitude
+      y: latitude
+
+  - type: box_select
+    source: echogram
+    write: focus
+
+    args:
+      dim: ping_time
+      axis: x
+
+
+sidebar:
+  children:
+    - track
+    - selection_summary
+    - selection_metadata
+
+
+layout:
+  type: tabs
+  dynamic: false
+  sizing_mode: stretch_width
+
+  children:
+    - title: Echograms
+      type: column
+      sizing_mode: stretch_width
+      children:
+        - echogram
+        - histogram
+
+    - title: RGB
+      type: column
+      sizing_mode: stretch_width
+      children:
+        - type: row
+          sizing_mode: stretch_width
+          children:
+            - rgb_red
+            - rgb_green
+            - rgb_blue
+
+        - rgb_echogram

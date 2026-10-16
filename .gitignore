@@ -143,3 +143,5 @@ _build
 
 # setuptools_scm generated version file
 echoshader/_echoshader_version.py
+
+notebooks/concatenated_MVBS.nc

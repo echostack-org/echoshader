@@ -11,10 +11,7 @@ Ocean sonar systems, such as echosounders, are the [workhorse to study life in t
 
 ## What is echoshader?
 
-Echoshader aims to enhance the capability to interactively visualize large volumes of ocean sonar data to accelerate data exploration and discovery. The
-project goes hand-in-hand with the ongoing development of
-[echopype](https://echopype.readthedocs.io/en/stable/), which handles the
-standardization, pre-processing, and organization of these data.
+Echoshader aims to enhance the capability to interactively visualize large volumes of ocean sonar data to accelerate data exploration and discovery. The project goes hand-in-hand with the ongoing development of [echopype](https://echopype.readthedocs.io/en/stable/), which handles the standardization, pre-processing, and organization of these data.
 
 By providing an accessible and customizable platform for echo data visualization, the project can accelerate advancements in oceanographic research for the benefit of conservation and sustainable resource management.
 
@@ -41,6 +38,25 @@ python -m pip install git+https://github.com/echostack-org/echoshader.git
 ```
 
 We recommend using [mamba](https://mamba.readthedocs.io/en/latest/user_guide/mamba.html) to manage conda environments.
+
+## Quick start
+
+Echoshader provides reusable visualization elements for standardized ocean sonar data stored as xarray datasets.
+
+```python
+import echoshader
+import xarray as xr
+
+ds = xr.open_dataset("MVBS.nc")
+
+ds.eshader.echogram(
+    channel="WBT 400143-15 ES38B_ES",
+    vert_dim="depth",
+)
+```
+
+Available visualization elements include echograms, tricolor echograms, vessel tracks, 3-D curtain plots, histograms, summary tables, curves, and NASC plots.
+See [`examples/notebooks/element_examples.ipynb`](examples/notebooks/element_examples.ipynb) for complete element examples.
 
 ## Development setup
 

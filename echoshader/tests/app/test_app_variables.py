@@ -6,7 +6,7 @@ import pytest
 import xarray as xr
 
 from echoshader.app.builder import build_app
-from echoshader.app.holoviz import AcousticSource, build_acoustic_app
+from echoshader.app.single_viewer import AcousticSource, build_acoustic_app
 
 
 @pytest.fixture

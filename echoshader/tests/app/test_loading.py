@@ -6,7 +6,7 @@ import xarray as xr
 from dask import delayed
 
 from echoshader.app.data import AcousticReadCache, SourceChangedError
-from echoshader.app.holoviz import AcousticSource, build_acoustic_app
+from echoshader.app.single_viewer import AcousticSource, build_acoustic_app
 
 
 def dataset(calls):

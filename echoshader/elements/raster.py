@@ -22,9 +22,7 @@ def _coordinates(plot):
 def rasterize_echogram(plot, width=1000, height=300, dynamic=True):
     x, y, values = _coordinates(plot)
     linear = plot.clone((x, y, 10.0 ** (values / 10.0)))
-    image = rasterize(
-        linear, aggregator=dsh.mean(), width=width, height=height, dynamic=dynamic
-    )
+    image = rasterize(linear, aggregator=dsh.mean(), width=width, height=height, dynamic=dynamic)
 
     def to_db(im):
         x, y, values = _coordinates(im)

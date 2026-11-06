@@ -10,9 +10,9 @@ import pandas as pd
 import panel as pn
 import xarray as xr
 
+from echoshader.app.data import bounded_preview, source_revision
 from echoshader.app.navigation import navigation_group
-from echoshader.app.data import source_revision, bounded_preview
-from echoshader.app.refresh import watch_changes, file_revision
+from echoshader.app.refresh import file_revision, watch_changes
 from echoshader.elements.curve import curve
 from echoshader.elements.echogram import echogram, tricolor_echogram
 from echoshader.elements.transect_map import transect_map as _transect_map
@@ -65,16 +65,13 @@ def _file_revisions(root, names):
 
 def _bottom_paths(root, names):
     return tuple(
-        root / (Path(name).name.removesuffix("_CPS.zarr") + "_bottom_line.csv")
-        for name in names
+        root / (Path(name).name.removesuffix("_CPS.zarr") + "_bottom_line.csv") for name in names
     )
 
 
 def _bottom_samples(paths, data):
     """Match saved detector results to display pings; retain gaps as NaN."""
-    frames = [
-        pd.read_csv(path, usecols=["time", "depth"]) for path in paths if path.exists()
-    ]
+    frames = [pd.read_csv(path, usecols=["time", "depth"]) for path in paths if path.exists()]
     if not frames:
         return np.full(data.sizes["ping_time"], np.nan)
     bottom = pd.concat(frames, ignore_index=True)
@@ -90,9 +87,7 @@ def _bottom_samples(paths, data):
 
 def _combine(parts, start, end):
     """Assemble the requested interval consistently for previews and file view."""
-    data = xr.concat(
-        parts, dim="ping_time", data_vars="minimal", coords="minimal", compat="equals"
-    )
+    data = xr.concat(parts, dim="ping_time", data_vars="minimal", coords="minimal", compat="equals")
     data = data.sortby("ping_time").sel(
         ping_time=slice(start.tz_convert(None), end.tz_convert(None))
     )
@@ -123,10 +118,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
             transects.to_json(),
             files.to_json(),
             _file_revisions(root, tuple(files.cps_filename)),
-            tuple(
-                file_revision(path)
-                for path in _bottom_paths(bottom_root, files.cps_filename)
-            ),
+            tuple(file_revision(path) for path in _bottom_paths(bottom_root, files.cps_filename)),
         )
 
     @lru_cache(maxsize=1)
@@ -142,11 +134,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                 for name, array in data.data_vars.items()
                 if {"channel", "ping_time"}.issubset(array.dims)
                 and array.ndim == 3
-                and (
-                    name in requested
-                    if requested is not None
-                    else name.startswith("Sv")
-                )
+                and (name in requested if requested is not None else name.startswith("Sv"))
             ]
             channels = {}
             for index, channel in enumerate(data.channel.values):
@@ -164,8 +152,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
         """Cache bounded previews by variable, channels, interval and source revision."""
         with ExitStack() as stack:
             parts = [
-                stack.enter_context(xr.open_zarr(root / "CPS_Sv" / name))
-                for name in selected_names
+                stack.enter_context(xr.open_zarr(root / "CPS_Sv" / name)) for name in selected_names
             ]
             if not parts:
                 raise ValueError("No completed Sv data available")
@@ -182,9 +169,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
             if not data.sizes.get("ping_time", 0):
                 raise ValueError("No pings in this transect interval")
             if variable not in data:
-                raise ValueError(
-                    f"{variable} is unavailable in this transect's CPS files"
-                )
+                raise ValueError(f"{variable} is unavailable in this transect's CPS files")
             navigation = None
             if (
                 "latitude" in data
@@ -203,9 +188,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
         return data, navigation
 
     def tab(interval, clim):
-        refresh = pn.widgets.Button(
-            name="Refresh transects", button_type="default", width=150
-        )
+        refresh = pn.widgets.Button(name="Refresh transects", button_type="default", width=150)
         notice = pn.pane.Alert(visible=False)
         failed = [False]
         preview_plots = {}
@@ -248,9 +231,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                 previous = variable.value
                 variable.options = variables
                 variable.value = (
-                    previous
-                    if previous in variables
-                    else (variables[0] if variables else None)
+                    previous if previous in variables else (variables[0] if variables else None)
                 )
                 names = list(channels.values())
                 for index, widget in enumerate([channel, *rgb]):
@@ -262,9 +243,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                         target = (18000, 38000, 70000)[max(0, index - 1)]
                         labels = list(channels)
                         frequencies = [
-                            float(label.split(" kHz")[0]) * 1000
-                            if " kHz" in label
-                            else np.nan
+                            float(label.split(" kHz")[0]) * 1000 if " kHz" in label else np.nan
                             for label in labels
                         ]
                         chosen = (
@@ -299,9 +278,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
             failed[0] = False
             transects, files = read_catalogue()
             if transects.empty:
-                return pn.pane.Alert(
-                    "Waiting for completed transects…", alert_type="warning"
-                )
+                return pn.pane.Alert("Waiting for completed transects…", alert_type="warning")
             rows, plots, bounds = [], [], []
             tracks = []
             active = {str(value).zfill(3) for value in transects.transect_part}
@@ -314,9 +291,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                     pd.to_datetime(row.start_time, utc=True),
                     pd.to_datetime(row.end_time, utc=True),
                 )
-                selected = files[
-                    (files.last_ping_time >= start) & (files.first_ping_time <= end)
-                ]
+                selected = files[(files.last_ping_time >= start) & (files.first_ping_time <= end)]
                 info = pn.pane.Markdown(f"**{number}**", width=48, margin=(4, 2, 0, 0))
                 try:
                     selected_names = tuple(selected.cps_filename)
@@ -480,9 +455,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
         ):
             if syncing[0]:
                 return pn.Spacer(height=0)
-            channels = (
-                (red, green, blue) if display_mode == "RGB" else (selected_channel,)
-            )
+            channels = (red, green, blue) if display_mode == "RGB" else (selected_channel,)
             if variable_name is None or any(value is None for value in channels):
                 return pn.pane.Alert(
                     "Waiting for acoustic variables and channels…", alert_type="warning"
@@ -516,7 +489,9 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
             return not failed[0]
 
         def error(exc):
-            notice.object = f"Could not check CPS updates; retaining the last view and retrying: {exc}"
+            notice.object = (
+                f"Could not check CPS updates; retaining the last view and retrying: {exc}"
+            )
             notice.alert_type = "warning"
             notice.visible = True
 
@@ -552,9 +527,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
     return None, [("Recent transects", tab)]
 
 
-def build_files(
-    *, root, processing_db="processing.db", seafloor_path="CPS_Seafloor_CSVs"
-):
+def build_files(*, root, processing_db="processing.db", seafloor_path="CPS_Seafloor_CSVs"):
     """Offer completed transects and CPS files without reading acoustic arrays."""
     root = Path(root).resolve()
     transects, files = _catalogue(root / processing_db, completed_only=True)
@@ -581,11 +554,7 @@ def build_files(
         start, end = pd.Timestamp(row.start_time), pd.Timestamp(row.end_time)
         first = pd.to_datetime(files.first_ping_time, utc=True)
         last = pd.to_datetime(files.last_ping_time, utc=True)
-        start = (
-            start.tz_localize("UTC")
-            if start.tzinfo is None
-            else start.tz_convert("UTC")
-        )
+        start = start.tz_localize("UTC") if start.tzinfo is None else start.tz_convert("UTC")
         end = end.tz_localize("UTC") if end.tzinfo is None else end.tz_convert("UTC")
         names = files.loc[(first <= end) & (last >= start), "cps_filename"]
         parts = []
@@ -632,10 +601,7 @@ def build_files(
         loader = lambda name=row.cps_filename: open_file(name)
         loader.revision = (
             _file_revisions(root, (row.cps_filename,)),
-            tuple(
-                file_revision(path)
-                for path in _bottom_paths(bottom_root, (row.cps_filename,))
-            ),
+            tuple(file_revision(path) for path in _bottom_paths(bottom_root, (row.cps_filename,))),
         )
         entries[f"CPS · {row.cps_filename}"] = loader
     return entries

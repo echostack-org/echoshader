@@ -1,5 +1,5 @@
-import types
 import sys
+import types
 
 import numpy as np
 import panel as pn
@@ -74,18 +74,30 @@ def test_rgb_preserves_channel_specific_auxiliary_coordinates():
 
 
 def test_independent_extension_does_not_open_file(monkeypatch):
-    module = types.ModuleType('test_independent_extension')
+    module = types.ModuleType("test_independent_extension")
+
     def factory(**kwargs):
-        assert not kwargs['ds'].variables
-        return None, [('Transects', lambda *_: pn.pane.Markdown('Overview'))]
+        assert not kwargs["ds"].variables
+        return None, [("Transects", lambda *_: pn.pane.Markdown("Overview"))]
+
     module.factory = factory
     monkeypatch.setitem(sys.modules, module.__name__, module)
+
     def fail(*args, **kwargs):
-        raise AssertionError('Independent overview opened the single file')
-    monkeypatch.setattr(xr, 'open_zarr', fail)
-    app = build_app({'data': {'survey': {'type': 'zarr', 'path': '/missing.zarr'}},
-        'extensions': {'recent_transects': {'factory': 'test_independent_extension:factory',
-                                           'requires_source': False}}})
+        raise AssertionError("Independent overview opened the single file")
+
+    monkeypatch.setattr(xr, "open_zarr", fail)
+    app = build_app(
+        {
+            "data": {"survey": {"type": "zarr", "path": "/missing.zarr"}},
+            "extensions": {
+                "recent_transects": {
+                    "factory": "test_independent_extension:factory",
+                    "requires_source": False,
+                }
+            },
+        }
+    )
     pane = app.main[0][2]
     content = pane.eval(pane.object)
     assert isinstance(content, pn.Column)

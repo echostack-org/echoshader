@@ -34,9 +34,7 @@ def write_navigation(tmp_path):
 
     navigation = pd.DataFrame(
         {
-            "timestamp_utc": pd.date_range(
-                "2024-01-01", periods=3, freq="min", tz="UTC"
-            ),
+            "timestamp_utc": pd.date_range("2024-01-01", periods=3, freq="min", tz="UTC"),
             "longitude": [-125.0, -124.5, -124.0],
             "latitude": [40.0, 41.0, 42.0],
             "speed_knots": [8.0, 8.0, 8.0],
@@ -113,8 +111,7 @@ def test_spasso_standalone_has_no_acoustic_source(tmp_path, monkeypatch):
 
     newly_imported = set(sys.modules) - modules_before
     assert not any(
-        name == "echodataflow" or name.startswith("echodataflow.")
-        for name in newly_imported
+        name == "echodataflow" or name.startswith("echodataflow.") for name in newly_imported
     )
 
 

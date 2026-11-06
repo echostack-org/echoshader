@@ -1,6 +1,7 @@
 """Standalone geographic scalar maps, current vectors, and background layers."""
 
 import math
+
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import geoviews as gv
@@ -129,5 +130,7 @@ def vector_field(u, v, *, step=2, scale=0.5):
     valid = np.isfinite(lon) & np.isfinite(lat) & np.isfinite(angle) & np.isfinite(magnitude)
     return gv.VectorField(
         (lon[valid], lat[valid], angle[valid], magnitude[valid]),
-        kdims=["Longitude", "Latitude"], vdims=["Angle", "Magnitude"], crs=CRS,
+        kdims=["Longitude", "Latitude"],
+        vdims=["Angle", "Magnitude"],
+        crs=CRS,
     ).opts(magnitude="Magnitude", scale=scale, pivot="mid")

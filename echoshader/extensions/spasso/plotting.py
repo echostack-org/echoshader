@@ -8,15 +8,14 @@ import numpy as np
 import panel as pn
 import xarray as xr
 
+from ...elements.map import CRS, create_geographic_layers, vector_field
+from ...elements.map import map as geographic_map
 from .data import (
     find_latest_product_file,
     find_variable,
     prepare_data_array,
     spatial_subset,
 )
-from ...elements.map import CRS, create_geographic_layers, map as geographic_map, vector_field
-
-
 
 
 def _apply_transform(
@@ -333,7 +332,8 @@ def create_currents_plot(
             True,
         ):
             vectors = vector_field(
-                u, v,
+                u,
+                v,
                 step=int(vector_config.get("step", 2)),
                 scale=float(vector_config.get("scale", 0.5)),
             )

@@ -105,5 +105,3 @@ def add_navigation(
         return plot
 
     return (plot * dynamic_navigation).opts(framewise=False)
-
-

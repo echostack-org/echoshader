@@ -64,9 +64,7 @@ def view(root, monkeypatch, **config):
     return tabs[0][1](None, (-100, -30))
 
 
-def test_selectors_route_variable_and_channels_to_existing_elements(
-    survey, monkeypatch
-):
+def test_selectors_route_variable_and_channels_to_existing_elements(survey, monkeypatch):
     calls = []
 
     def record(kind):
@@ -99,9 +97,7 @@ def test_selectors_route_variable_and_channels_to_existing_elements(
 
 def test_clipped_001_shows_warning_instead_of_empty_plot(survey, monkeypatch):
     app = view(survey, monkeypatch, xlim=[-125.0, -124.25])
-    assert any(
-        "outside xlim" in str(alert.object) for alert in app.select(pn.pane.Alert)
-    )
+    assert any("outside xlim" in str(alert.object) for alert in app.select(pn.pane.Alert))
 
 
 def test_single_element_renders_001_with_automatic_bounds(survey, monkeypatch):
@@ -110,9 +106,7 @@ def test_single_element_renders_001_with_automatic_bounds(survey, monkeypatch):
     assert panes
     for pane in panes:
         hv.render(pane.object)
-    assert not any(
-        "outside xlim" in str(alert.object) for alert in app.select(pn.pane.Alert)
-    )
+    assert not any("outside xlim" in str(alert.object) for alert in app.select(pn.pane.Alert))
     app[1][1].value = "Single channel"
     for pane in app.select(pn.pane.HoloViews):
         hv.render(pane.object)
@@ -120,10 +114,7 @@ def test_single_element_renders_001_with_automatic_bounds(survey, monkeypatch):
 
 def test_empty_startup_waits_for_metadata(tmp_path, monkeypatch):
     app = view(tmp_path, monkeypatch)
-    assert any(
-        "Waiting for acoustic" in str(alert.object)
-        for alert in app.select(pn.pane.Alert)
-    )
+    assert any("Waiting for acoustic" in str(alert.object) for alert in app.select(pn.pane.Alert))
 
 
 def test_bottom_matches_pings_without_filling_missing_detections(survey):
@@ -145,9 +136,7 @@ def test_bottom_matches_pings_without_filling_missing_detections(survey):
     )
 
 
-def test_seafloor_overlay_toggle_and_new_csv_reuses_acoustic_preview(
-    survey, monkeypatch
-):
+def test_seafloor_overlay_toggle_and_new_csv_reuses_acoustic_preview(survey, monkeypatch):
     calls = []
     original_open = xr.open_zarr
 
@@ -156,9 +145,7 @@ def test_seafloor_overlay_toggle_and_new_csv_reuses_acoustic_preview(
         return original_open(*args, **kwargs)
 
     monkeypatch.setattr(xr, "open_zarr", opened)
-    monkeypatch.setattr(
-        cps, "tricolor_echogram", lambda *a, **k: hv.Image(np.ones((2, 2)))
-    )
+    monkeypatch.setattr(cps, "tricolor_echogram", lambda *a, **k: hv.Image(np.ones((2, 2))))
     app = view(survey, monkeypatch)
     count = len(calls)
     directory = survey / "CPS_Seafloor_CSVs"
@@ -171,9 +158,7 @@ def test_seafloor_overlay_toggle_and_new_csv_reuses_acoustic_preview(
         }
     ).to_csv(path, index=False)
     app[0][1].clicks += 1
-    assert (
-        len(calls) == count
-    )  # Only the line changed: bounded acoustic preview stays cached.
+    assert len(calls) == count  # Only the line changed: bounded acoustic preview stays cached.
     plot = app.select(pn.pane.HoloViews)[0].object
     assert isinstance(plot, hv.Overlay)
     line = plot.get(1)
@@ -213,6 +198,7 @@ def test_single_viewer_line_uses_depth_milliseconds_and_gaps():
     # echopype/validation dependencies, absent from the uploaded source snapshot.
     import ast
     from pathlib import Path
+
     from echoshader.elements.curve import curve
 
     path = Path(__file__).resolve().parents[2] / "app/single_viewer.py"
@@ -236,15 +222,11 @@ def test_single_viewer_line_uses_depth_milliseconds_and_gaps():
     base = hv.Curve(([1.0, 2.0], [1.0, 2.0]))
     result = overlay(base, data)
     line = result.get(1)
-    np.testing.assert_allclose(
-        line.dimension_values("depth"), [50.0, np.nan, 70.0], equal_nan=True
-    )
+    np.testing.assert_allclose(line.dimension_values("depth"), [50.0, np.nan, 70.0], equal_nan=True)
     expected = times.to_numpy(dtype="datetime64[ns]").astype("int64") / 1e6
     np.testing.assert_allclose(line.dimension_values("ping_time"), expected)
     hv.render(result)
     missing = data.assign(seafloor_depth=("ping_time", [np.nan] * 3))
     assert overlay(base, missing) is base
     native = overlay(base, data, rasterized=False)
-    assert np.issubdtype(
-        native.get(1).dimension_values("ping_time").dtype, np.datetime64
-    )
+    assert np.issubdtype(native.get(1).dimension_values("ping_time").dtype, np.datetime64)

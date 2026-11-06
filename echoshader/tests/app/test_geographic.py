@@ -35,9 +35,7 @@ def test_scalar_and_vectors_render():
 def test_product_reuses_element_and_selects_filename_date(tmp_path):
     for date in ("20260919", "20260918"):
         field().to_dataset().to_netcdf(tmp_path / f"{date}_SST.nc")
-    assert (
-        data.find_latest_product_file(tmp_path, ["*_SST.nc"]).name == "20260919_SST.nc"
-    )
+    assert data.find_latest_product_file(tmp_path, ["*_SST.nc"]).name == "20260919_SST.nc"
     plot = plotting.create_product_plot(
         product_name="sst",
         product_config={
@@ -56,9 +54,7 @@ def test_product_reuses_element_and_selects_filename_date(tmp_path):
 def test_watcher_schema_navigation(tmp_path):
     positions = pd.DataFrame(
         {
-            "timestamp_utc": pd.date_range(
-                "2026-09-18", periods=150, freq="min", tz="UTC"
-            ),
+            "timestamp_utc": pd.date_range("2026-09-18", periods=150, freq="min", tz="UTC"),
             "latitude": np.linspace(40, 42, 150),
             "longitude": np.linspace(-126, -125, 150),
             "speed_knots": 8.0,
@@ -70,7 +66,5 @@ def test_watcher_schema_navigation(tmp_path):
     positions.iloc[:101].to_parquet(tmp_path / "ship_navigation_a.parquet", index=False)
     loaded = data.read_navigation({"dashboard": {"navigation_path": str(tmp_path)}})
     pd.testing.assert_frame_equal(loaded, positions)
-    track = importlib.import_module("echoshader.elements.ship_track").navigation_layer(
-        loaded
-    )
+    track = importlib.import_module("echoshader.elements.ship_track").navigation_layer(loaded)
     assert hv.render(track, backend="bokeh") is not None

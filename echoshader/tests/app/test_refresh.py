@@ -2,23 +2,23 @@
 
 import os
 import sqlite3
+import sys
 from pathlib import Path
 from types import SimpleNamespace
-import sys
 
-import holoviews as hv
 import geoviews as gv
+import holoviews as hv
 import numpy as np
 import pandas as pd
 import panel as pn
 import xarray as xr
 
-from echoshader.app.refresh import watch_changes
-from echoshader.app.data import source_revision
-from echoshader.extensions.spasso.data import NavigationReader
-from echoshader.extensions.spasso import app as spasso
-from echoshader.extensions.cps import app as cps
 from echoshader.app import pages
+from echoshader.app.data import source_revision
+from echoshader.app.refresh import watch_changes
+from echoshader.extensions.cps import app as cps
+from echoshader.extensions.spasso import app as spasso
+from echoshader.extensions.spasso.data import NavigationReader
 
 hv.extension("bokeh")
 
@@ -375,5 +375,3 @@ def test_generic_transects_reuse_unchanged_views(tmp_path, monkeypatch):
     write("b.zarr")
     checks[0]()
     assert len(calls) == 2
-
-

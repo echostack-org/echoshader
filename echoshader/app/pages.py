@@ -6,8 +6,8 @@ from importlib import import_module
 import panel as pn
 import xarray as xr
 
-from .lazy import lazy_view
 from .data import open_source, source_revision
+from .lazy import lazy_view
 from .refresh import watch_changes
 
 

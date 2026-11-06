@@ -2,6 +2,7 @@ import holoviews as hv
 import numpy as np
 import pytest
 import xarray as xr
+
 from echoshader.elements.echogram import tricolor_echogram
 
 hv.extension("bokeh")
@@ -28,9 +29,7 @@ def data(longitude):
 def test_longitude_uses_actual_cells_without_sorting(longitude):
     ds = data(longitude)
     before = ds.copy(deep=True)
-    mesh = tricolor_echogram(
-        ds, ["18", "38", "70"], -90, -30, x_dim="longitude", vert_dim="depth"
-    )
+    mesh = tricolor_echogram(ds, ["18", "38", "70"], -90, -30, x_dim="longitude", vert_dim="depth")
     assert isinstance(mesh, hv.QuadMesh)
     np.testing.assert_array_equal(mesh.data["longitude"], longitude)
     plot = hv.renderer("bokeh").get_plot(mesh)
@@ -46,6 +45,4 @@ def test_longitude_uses_actual_cells_without_sorting(longitude):
 
 def test_time_axis_keeps_existing_rgb_element():
     ds = data([0.0, 1.0, 2.0, 3.0])
-    assert isinstance(
-        tricolor_echogram(ds, ["18", "38", "70"], -90, -30, vert_dim="depth"), hv.RGB
-    )
+    assert isinstance(tricolor_echogram(ds, ["18", "38", "70"], -90, -30, vert_dim="depth"), hv.RGB)

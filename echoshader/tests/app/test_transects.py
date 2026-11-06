@@ -1,9 +1,9 @@
 import sqlite3
+
 import holoviews as hv
 import numpy as np
-import xarray as xr
 import panel as pn
-
+import xarray as xr
 
 hv.extension("bokeh")
 
@@ -57,9 +57,7 @@ def test_previews_are_reused_and_refresh_reads_catalogue(tmp_path, monkeypatch):
         return original(*a, **kw)
 
     monkeypatch.setattr(xr, "open_zarr", opening)
-    _, tabs = adapter.build_tabs(
-        ds=ds, root=tmp_path, config={}, max_pings=6, max_range_samples=8
-    )
+    _, tabs = adapter.build_tabs(ds=ds, root=tmp_path, config={}, max_pings=6, max_range_samples=8)
     assert not opens
     color = pn.widgets.RangeSlider(start=-120, end=-20, value=(-100, -30))
     tab = tabs[0][1](None, color.param.value)

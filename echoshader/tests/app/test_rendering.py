@@ -1,8 +1,9 @@
+import datashader as dsh
+import holoviews as hv
 import numpy as np
 import xarray as xr
-import holoviews as hv
-import datashader as dsh
 from holoviews.operation.datashader import rasterize
+
 from echoshader.elements.echogram import echogram, tricolor_echogram
 from echoshader.elements.raster import rasterize_echogram
 

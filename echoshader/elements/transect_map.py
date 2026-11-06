@@ -26,7 +26,9 @@ def transect_map(tracks, config, numbers):
     if not valid_tracks:
         return pn.Column(
             "**Transect locations**",
-            pn.pane.Alert("No usable latitude/longitude in the transect files.", alert_type="warning"),
+            pn.pane.Alert(
+                "No usable latitude/longitude in the transect files.", alert_type="warning"
+            ),
             width=width,
             margin=0,
         )

@@ -83,6 +83,4 @@ def test_basic_viewer_does_not_load_extensions(monkeypatch):
 
 def test_unknown_extension_still_fails_without_factory():
     with pytest.raises(ValueError, match="Unknown extension"):
-        builder.build_app(
-            {"extensions": {"missing": {}}}, datasets={"survey": dataset()}
-        )
+        builder.build_app({"extensions": {"missing": {}}}, datasets={"survey": dataset()})

@@ -1,9 +1,10 @@
-import numpy as np
-import xarray as xr
 import dask.array as da
-from dask import delayed
-import pytest
+import numpy as np
 import panel as pn
+import pytest
+import xarray as xr
+from dask import delayed
+
 from echoshader.app.data import AcousticReadCache, SourceChangedError
 from echoshader.app.holoviz import AcousticSource, build_acoustic_app
 

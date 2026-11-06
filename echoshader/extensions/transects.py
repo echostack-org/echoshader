@@ -5,7 +5,7 @@ from pathlib import Path
 import panel as pn
 import xarray as xr
 
-from ..app.data import source_revision, bounded_preview
+from ..app.data import bounded_preview, source_revision
 from ..app.navigation import attach_navigation, navigation_group
 from ..app.refresh import watch_changes
 from ..elements.echogram import tricolor_echogram

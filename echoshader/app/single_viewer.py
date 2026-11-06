@@ -22,8 +22,8 @@ import param
 import xarray as xr
 from bokeh.models import CustomJSTickFormatter
 
-from echoshader.elements.echogram import echogram, tricolor_echogram
 from echoshader.elements.curve import curve
+from echoshader.elements.echogram import echogram, tricolor_echogram
 from echoshader.elements.track import track as track_element
 from echoshader.validation import validate_dataset
 
@@ -61,11 +61,7 @@ def _with_seafloor(plot, data, *, bottom=None, rasterized=True):
         values = bottom.copy()
         values["time"] = pd.to_datetime(values["time"], utc=True)
         values = values.drop_duplicates("time", keep="last").set_index("time")
-        depths = (
-            pd.to_numeric(values.depth, errors="coerce")
-            .reindex(times)
-            .to_numpy(dtype=float)
-        )
+        depths = pd.to_numeric(values.depth, errors="coerce").reindex(times).to_numpy(dtype=float)
     else:
         return plot
     if not np.isfinite(depths).any():
@@ -86,11 +82,7 @@ def _channel_for_frequency(ds, freq):
         return names[0]
     freqs = np.asarray(ds.frequency_nominal.values, dtype=float).reshape(-1)
     finite = np.flatnonzero(np.isfinite(freqs))
-    return (
-        names[int(finite[np.argmin(abs(freqs[finite] - freq))])]
-        if len(finite)
-        else names[0]
-    )
+    return names[int(finite[np.argmin(abs(freqs[finite] - freq))])] if len(finite) else names[0]
 
 
 def _parse_track(source: AcousticSource):
@@ -142,9 +134,7 @@ def build_acoustic_app(
 
     ds = source.data
     if not source.variables or isinstance(source.variables, str):
-        raise ValueError(
-            "variables must be a non-empty sequence of acoustic variable names"
-        )
+        raise ValueError("variables must be a non-empty sequence of acoustic variable names")
     variables = tuple(source.variables)
     if len(set(variables)) != len(variables):
         raise ValueError("Acoustic variable names must be unique")
@@ -152,9 +142,7 @@ def build_acoustic_app(
     for variable in variables[1:]:
         other = validate_dataset(ds, var_name=variable)
         if other.vertical_dim != dataset_validation.vertical_dim:
-            raise ValueError(
-                "Displayed acoustic variables must share the same vertical dimension"
-            )
+            raise ValueError("Displayed acoustic variables must share the same vertical dimension")
     has_bottom = source.bottom is not None or "seafloor_depth" in ds
     n = ds.sizes["ping_time"]
     if not n:
@@ -164,20 +152,12 @@ def build_acoustic_app(
     initial = (max(0, n - max_pings), n)
     channels = [str(ch) for ch in ds.channel.values]
     freqs = (
-        np.asarray(ds.frequency_nominal.values, dtype=float)
-        if "frequency_nominal" in ds
-        else None
+        np.asarray(ds.frequency_nominal.values, dtype=float) if "frequency_nominal" in ds else None
     )
     # Missing nominal frequencies must not collapse all channels into the first.
-    ordered = (
-        [channels[i] for i in np.argsort(freqs)] if freqs is not None else channels
-    )
+    ordered = [channels[i] for i in np.argsort(freqs)] if freqs is not None else channels
     available = (
-        {
-            ch: float(freq) / 1000
-            for ch, freq in zip(channels, freqs)
-            if np.isfinite(freq)
-        }
+        {ch: float(freq) / 1000 for ch, freq in zip(channels, freqs) if np.isfinite(freq)}
         if freqs is not None
         else {}
     )
@@ -237,9 +217,7 @@ def build_acoustic_app(
                 else channels[min(i, len(channels) - 1)]
             ),
         )
-        for i, (label, freq) in enumerate(
-            zip(("Red", "Green", "Blue"), (120000, 38000, 18000))
-        )
+        for i, (label, freq) in enumerate(zip(("Red", "Green", "Blue"), (120000, 38000, 18000)))
     ]
 
     def bounded(window):
@@ -368,9 +346,7 @@ def build_acoustic_app(
         vertical = next(
             (
                 v
-                for v in (
-                    ("depth", "echo_range") if has_bottom else ("echo_range", "depth")
-                )
+                for v in (("depth", "echo_range") if has_bottom else ("echo_range", "depth"))
                 if v in ds
             ),
             dataset_validation.vertical_dim,
@@ -394,11 +370,7 @@ def build_acoustic_app(
 
     def plot_xrange(bounds):
         bounds = xrange(bounds)
-        return (
-            tuple(pd.Timestamp(v).value / 1e6 for v in bounds)
-            if source.rasterized
-            else bounds
-        )
+        return tuple(pd.Timestamp(v).value / 1e6 for v in bounds) if source.rasterized else bounds
 
     def xrange(bounds):
         a, b = bounded(bounds)
@@ -420,8 +392,7 @@ def build_acoustic_app(
                 name
                 for name in (
                     ("depth",)
-                    if dataset_validation.vertical_dim == "depth"
-                    or (has_bottom and "depth" in w)
+                    if dataset_validation.vertical_dim == "depth" or (has_bottom and "depth" in w)
                     else ("echo_range", "depth")
                 )
                 if name in w
@@ -487,18 +458,13 @@ def build_acoustic_app(
     def multifrequency(bounds, clim, palette, variable):
         navigation = navigation_group()
         return pn.Column(
-            *[
-                linked_echogram(bounds, clim, palette, variable, ch, navigation)
-                for ch in ordered
-            ],
+            *[linked_echogram(bounds, clim, palette, variable, ch, navigation) for ch in ordered],
             sizing_mode="stretch_width",
         )
 
     def tricolor(bounds, clim, variable, red, green, blue):
         try:
-            w = window_dataset(
-                tuple(bounds), variable, list(dict.fromkeys([red, green, blue]))
-            )
+            w = window_dataset(tuple(bounds), variable, list(dict.fromkeys([red, green, blue])))
         except SourceChangedError as exc:
             return pn.pane.Alert(str(exc), alert_type="warning")
         # Keep geometry variables: w[["Sv"]] discards native echo_range/depth.
@@ -507,8 +473,7 @@ def build_acoustic_app(
                 name
                 for name in (
                     ("depth",)
-                    if dataset_validation.vertical_dim == "depth"
-                    or (has_bottom and "depth" in w)
+                    if dataset_validation.vertical_dim == "depth" or (has_bottom and "depth" in w)
                     else ("echo_range", "depth")
                 )
                 if name in w
@@ -594,9 +559,7 @@ def build_acoustic_app(
         rows["x"] = 6378137.0 * np.deg2rad(rows.longitude.to_numpy(dtype=float))
         rows["y"] = 6378137.0 * np.log(np.tan(np.pi / 4 + np.deg2rad(latitude) / 2))
 
-        points = hv.Points(
-            rows, kdims=["x", "y"], vdims=["ping_index", "longitude", "latitude"]
-        )
+        points = hv.Points(rows, kdims=["x", "y"], vdims=["ping_index", "longitude", "latitude"])
         selectable = points.opts(
             size=6,
             color="gray",
@@ -739,8 +702,7 @@ def build_acoustic_app(
                 "Dataset attributes",
                 pn.pane.Markdown(
                     "\n\n".join(
-                        f"**{key}**\n\n```text\n{value}\n```"
-                        for key, value in attributes.items()
+                        f"**{key}**\n\n```text\n{value}\n```" for key, value in attributes.items()
                     )
                 ),
             )

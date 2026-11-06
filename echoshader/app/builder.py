@@ -8,12 +8,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-
 from echoshader.validation import validate_dataset
 
-from .single_viewer import AcousticSource, build_acoustic_app
 from .data import open_source
 from .registry import EXTENSIONS
+from .single_viewer import AcousticSource, build_acoustic_app
 
 
 def _data_path(value: str, config_dir: str | Path | None) -> Path:

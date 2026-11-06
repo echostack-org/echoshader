@@ -33,13 +33,9 @@ def test_default_source_keeps_sv():
 
 
 def test_app_exposes_configured_variable_choices(dataset):
-    app = build_acoustic_app(
-        AcousticSource(dataset, variables=("Sv", "processed_backscatter"))
-    )
+    app = build_acoustic_app(AcousticSource(dataset, variables=("Sv", "processed_backscatter")))
     selectors = {
-        widget.label: widget
-        for content in app.main
-        for widget in content.select(pn.widgets.Select)
+        widget.label: widget for content in app.main for widget in content.select(pn.widgets.Select)
     }
     assert selectors["Acoustic variable"].options == ["Sv", "processed_backscatter"]
     assert selectors["RGB variable"].options == ["Sv", "processed_backscatter"]
@@ -49,7 +45,7 @@ def test_app_exposes_configured_variable_choices(dataset):
 
 
 def test_yaml_builder_passes_variables(dataset, monkeypatch):
-    import echoshader.app.builder as builder
+    from echoshader.app import builder
 
     captured = {}
 

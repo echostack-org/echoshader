@@ -77,7 +77,7 @@ def test_selectors_route_variable_and_channels_to_existing_elements(survey, monk
     monkeypatch.setattr(cps, "tricolor_echogram", record("RGB"))
     monkeypatch.setattr(cps, "echogram", record("single"))
     app = view(survey, monkeypatch)
-    variable, mode, channel, red, green, blue, show_bottom = app[1]
+    variable, mode, channel, red, _green, _blue, _show_bottom = app[1]
     assert variable.options == ["Sv", "Sv_water_column"]
     assert calls[-1][1]["channel"] == ["18", "38", "70"]
     assert any("120 kHz" in label for label in red.options)
@@ -194,26 +194,8 @@ def test_single_file_catalogue_includes_bottom_and_its_revision(survey):
 
 
 def test_single_viewer_line_uses_depth_milliseconds_and_gaps():
-    # Isolate this pure overlay helper from the application's optional full
-    # echopype/validation dependencies, absent from the uploaded source snapshot.
-    import ast
-    from pathlib import Path
+    from echoshader.app.single_viewer import _with_seafloor as overlay
 
-    from echoshader.elements.curve import curve
-
-    path = Path(__file__).resolve().parents[2] / "app/single_viewer.py"
-    tree = ast.parse(path.read_text())
-    function = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == "_with_seafloor"
-    )
-    namespace = {"pd": pd, "np": np, "curve": curve}
-    exec(
-        compile(ast.Module(body=[function], type_ignores=[]), str(path), "exec"),
-        namespace,
-    )
-    overlay = namespace["_with_seafloor"]
     times = pd.date_range("2024-01-01", periods=3, freq="min")
     data = xr.Dataset(
         {"seafloor_depth": ("ping_time", [50.0, np.nan, 70.0])},

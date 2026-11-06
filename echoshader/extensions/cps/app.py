@@ -335,12 +335,12 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                                 f"Transect longitude {bound[0]:.4f} to {bound[1]:.4f} is outside "
                                 f"xlim {fixed_xlim}. Remove xlim from app.yaml to show all transects."
                             )
-                        options = dict(
-                            var_name=variable_name,
-                            x_dim="longitude",
-                            vert_dim=config.get("vert_dim", "depth"),
-                            rasterized=True,
-                        )
+                        options = {
+                            "var_name": variable_name,
+                            "x_dim": "longitude",
+                            "vert_dim": config.get("vert_dim", "depth"),
+                            "rasterized": True,
+                        }
                         if display_mode == "RGB":
                             plot = tricolor_echogram(
                                 data,

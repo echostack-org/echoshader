@@ -98,7 +98,14 @@ def build_pages(config, datasets=None, *, config_dir=None):
                 panel.objects = list(child.main)
                 state["signature"] = signature
                 notice.visible = False
-            except Exception as exc:
+            except (
+                ImportError,
+                KeyError,
+                OSError,
+                RuntimeError,
+                TypeError,
+                ValueError,
+            ) as exc:
                 if owned and selected_datasets:
                     selected_datasets[name].close()
                 if not panel.objects:
@@ -187,7 +194,8 @@ def build_pages(config, datasets=None, *, config_dir=None):
 
                 factory = EXTENSIONS[name]()
             root = _data_path(
-                settings.get("root", str(path.parent.parent) if path else "."), config_dir
+                settings.get("root", str(path.parent.parent) if path else "."),
+                config_dir,
             )
             _, tabs = factory(
                 ds=data,

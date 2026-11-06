@@ -57,7 +57,10 @@ def create_spasso_app(config):
 
     def snapshot():
         products = tuple(
-            (name, file_revision(path) if (path := product_path(options, current)) else None)
+            (
+                name,
+                file_revision(path) if (path := product_path(options, current)) else None,
+            )
             for group in groups.values()
             for name, options, current in group
         )
@@ -97,12 +100,18 @@ def create_spasso_app(config):
             if path is None:
                 slot.objects = [
                     pn.pane.Alert(
-                        f"Waiting for {options.get('title', name)}…", alert_type="warning"
+                        f"Waiting for {options.get('title', name)}…",
+                        alert_type="warning",
                     )
                 ]
                 revisions[name] = key
                 continue
-            common = dict(spasso_dir=root, bounds=state["bounds"], width=width, height=height)
+            common = {
+                "spasso_dir": root,
+                "bounds": state["bounds"],
+                "width": width,
+                "height": height,
+            }
             plot = (
                 create_currents_plot(currents_config=options, **common)
                 if current
@@ -141,18 +150,28 @@ def create_spasso_app(config):
         notice.visible = True
 
     check = watch_changes(
-        snapshot, update, seconds=float(dashboard.get("refresh_seconds", 60)), on_error=error
+        snapshot,
+        update,
+        seconds=float(dashboard.get("refresh_seconds", 60)),
+        on_error=error,
     )
 
     def product_tab(group):
         panes = []
         for name, options, current in groups[group]:
             if name not in slots:
-                slots[name] = (pn.Column("Waiting for data…", width=width), options, current)
+                slots[name] = (
+                    pn.Column("Waiting for data…", width=width),
+                    options,
+                    current,
+                )
             panes.append(slots[name][0])
         check(force=True)
         return pn.FlexBox(
-            *panes, flex_wrap="wrap", sizing_mode="stretch_width", styles={"gap": "12px"}
+            *panes,
+            flex_wrap="wrap",
+            sizing_mode="stretch_width",
+            styles={"gap": "12px"},
         )
 
     tabs = pn.Tabs(
@@ -162,5 +181,9 @@ def create_spasso_app(config):
     )
     check()
     return pn.Column(
-        f"# {dashboard.get('title', 'SPASSO')}", status, notice, tabs, sizing_mode="stretch_width"
+        f"# {dashboard.get('title', 'SPASSO')}",
+        status,
+        notice,
+        tabs,
+        sizing_mode="stretch_width",
     )

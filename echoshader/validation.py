@@ -44,6 +44,7 @@ def _tricolor_status(
     vertical_dim: str,
     atol: float,
     vert_dim: str | None,
+    allow_variable_geometry: bool = False,
 ) -> tuple[bool, str]:
     if len(channels) != 3 or len(set(channels)) != 3:
         return False, "Tricolor requires exactly three distinct channels."
@@ -90,6 +91,16 @@ def _tricolor_status(
                 )
         geometry = first
 
+    if allow_variable_geometry and "ping_time" in geometry.dims:
+        values = np.asarray(geometry.transpose(vertical_dim, "ping_time").compute().values)
+        if not np.isfinite(values).any():
+            return False, "No finite physical geometry."
+        for column in values.T:
+            finite = column[np.isfinite(column)]
+            if finite.size and (finite.size < 2 or np.any(np.diff(finite) <= 0)):
+                return False, "Physical geometry must increase within each ping."
+        return True, f"Channels share physical {physical} cell geometry."
+
     if "ping_time" in geometry.dims:
         ref = geometry.isel(ping_time=0, drop=True)
         if not _equal_geometry(geometry, ref, atol):
@@ -116,6 +127,7 @@ def validate_dataset(
     vert_dim: str | None = None,
     var_name: str = "Sv",
     atol: float = 1e-6,
+    allow_variable_geometry: bool = False,
 ) -> DatasetValidation:
     """Validate dataset schema and report readiness for tricolor rendering.
 
@@ -158,7 +170,12 @@ def validate_dataset(
         ready, reason = False, "Not checked (pass tricolor_channels to validate physical geometry)."
     else:
         ready, reason = _tricolor_status(
-            ds, tuple(map(str, tricolor_channels)), vertical_dim, atol, vert_dim
+            ds,
+            tuple(map(str, tricolor_channels)),
+            vertical_dim,
+            atol,
+            vert_dim,
+            allow_variable_geometry,
         )
     return DatasetValidation(
         vertical_dim=vertical_dim,

@@ -30,7 +30,8 @@ venv/
 .ipynb_checkpoints/
 examples/notebooks/*.zarr/
 examples/notebooks/*.zip
-examples/notebooks/concatenated_MVBS.nc
 
 docs/source/element_examples.ipynb
 docs/source/echogram_vertical_coordinates.ipynb
+
+/echoshader/test_data/concatenated_MVBS.nc

@@ -1,6 +1,6 @@
+from __future__ import annotations
+
 import numpy
-import plotly.graph_objects as go
-import pyvista
 import xarray
 
 
@@ -63,6 +63,7 @@ def _curtain_plotly(
     ratio: float = 0.001,
 ) -> go.Figure:
     """Create a 3-D curtain plot using Plotly."""
+    import plotly.graph_objects as go
 
     data = MVBS_ds.Sv.values[1:].T
     lon = MVBS_ds.longitude.values[1:]
@@ -163,6 +164,7 @@ def _curtain_pyvista(
     ratio: float = 0.001,
 ) -> pyvista.Plotter:
     """Create a 3-D curtain plot using PyVista."""
+    import pyvista
 
     data = MVBS_ds.Sv.values[1:].T
 

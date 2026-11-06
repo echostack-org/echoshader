@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev,test]"
+          python -m pip install -e ".[dev,test,spasso]"
           python -m pip check
           python -c "import echopype; print('Echopype:', echopype.__version__)"
 

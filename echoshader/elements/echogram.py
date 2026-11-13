@@ -30,6 +30,7 @@ def echogram(
     vert_dim: str = "echo_range",
     *,
     rasterized: bool = False,
+    dynamic: bool = True,
 ):
     """
     Create single- or multi-channel echograms.
@@ -62,6 +63,7 @@ def echogram(
             x_dim=x_dim,
             vert_dim=vert_dim,
             rasterized=rasterized,
+            dynamic=dynamic,
         )
     else:
         channels = channel
@@ -74,6 +76,7 @@ def echogram(
             x_dim=x_dim,
             vert_dim=vert_dim,
             rasterized=rasterized,
+            dynamic=dynamic,
         )
         for ch in channels
     ]
@@ -89,6 +92,7 @@ def single_echogram(
     vert_dim: str = "echo_range",
     *,
     rasterized: bool = False,
+    dynamic: bool = True,
 ):
     """Create an echogram for one acoustic channel."""
     data = ds[var_name].sel(channel=channel)
@@ -130,7 +134,7 @@ def single_echogram(
         if rasterized:
             from .raster import rasterize_echogram
 
-            plot = rasterize_echogram(plot)
+            plot = rasterize_echogram(plot, dynamic=dynamic)
             if numpy.issubdtype(ds[x_dim].dtype, numpy.datetime64):
                 plot = plot.opts(hooks=[_format_time_axis])
         return plot.relabel(str(channel)).opts(invert_yaxis=True)
@@ -194,7 +198,7 @@ def single_echogram(
     if rasterized:
         from .raster import rasterize_echogram
 
-        plot = rasterize_echogram(plot)
+        plot = rasterize_echogram(plot, dynamic=dynamic)
         if numpy.issubdtype(ds[x_dim].dtype, numpy.datetime64):
             plot = plot.opts(hooks=[_format_time_axis])
     return plot.relabel(str(channel)).opts(invert_yaxis=True)
@@ -210,6 +214,7 @@ def tricolor_echogram(
     vert_dim: str = "echo_range",
     *,
     rasterized: bool = False,
+    dynamic: bool = True,
 ):
     """
     Create a tricolor RGB echogram.
@@ -262,7 +267,7 @@ def tricolor_echogram(
                 {x_dim: ds[x_dim].astype("datetime64[ns]").astype("int64") / 1e6}
             )
         meshes = [single_echogram(mesh_ds, ch, var_name, x_dim, vert_dim) for ch in channel]
-        result = rasterize_rgb(meshes, vmin, vmax)
+        result = rasterize_rgb(meshes, vmin, vmax, dynamic=dynamic)
         if numpy.issubdtype(ds[x_dim].dtype, numpy.datetime64):
             result = result.opts(hooks=[_format_time_axis])
         return result.opts(invert_yaxis=True)
@@ -350,8 +355,10 @@ def _tricolor_coordinate_mesh(ds, rgb, vertical, x_dim, vert_dim):
     if x.size < 2 or numpy.ptp(x.values) == 0:
         raise ValueError(f"{x_dim} requires at least two distinct positions")
     colors = numpy.stack(rgb, axis=-1)
-    finite = numpy.isfinite(colors).all(axis=-1).ravel()
-    colors = numpy.rint(numpy.clip(numpy.nan_to_num(colors), 0, 1) * 255).astype("uint8")
+    valid = numpy.isfinite(colors)
+    finite = valid.any(axis=-1).ravel()
+    colors = numpy.where(valid, colors, 0.0)
+    colors = numpy.rint(numpy.clip(colors, 0, 1) * 255).astype("uint8")
     hexcolors = numpy.array([f"#{r:02x}{g:02x}{b:02x}" for r, g, b in colors.reshape(-1, 3)])
     indices = numpy.arange(len(hexcolors)).reshape(colors.shape[:2])
 
@@ -396,9 +403,9 @@ def _datetime_safe_quadmesh(data, **kwargs):
 
 
 def _format_time_axis(plot, element):
-    from bokeh.models import DatetimeTicker, DatetimeTickFormatter
+    from bokeh.models import DatetimeTicker
 
     for axis in plot.state.xaxis:
         axis.ticker = DatetimeTicker()
-        axis.formatter = DatetimeTickFormatter()
+        axis.ticker = DatetimeTicker(desired_num_ticks=12)
         axis.axis_label = "Time (UTC)"

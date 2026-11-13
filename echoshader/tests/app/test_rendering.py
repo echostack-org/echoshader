@@ -93,3 +93,35 @@ def test_mismatched_rgb_geometry_rejected():
 
     with pytest.raises(ValueError, match="differs"):
         tricolor_echogram(ds, ["a", "b", "c"], -100, -30, rasterized=True)
+
+
+def test_shared_rasterizer_keeps_mesh_and_respects_source_options(monkeypatch):
+    from echoshader.elements import raster as module
+
+    mesh = hv.QuadMesh(
+        ([0.0, 1.0], [0.0, 1.0], np.array([[-60.0, -80.0], [-60.0, -80.0]])), vdims=["Sv"]
+    )
+    original = module.rasterize
+    received = []
+
+    def spy(plot, **kwargs):
+        received.append(type(plot))
+        return original(plot, **kwargs)
+
+    monkeypatch.setattr(module, "rasterize", spy)
+    image = module.rasterize_echogram(mesh, width=1, height=1, dynamic=False, aggregation="mean")
+    assert received == [hv.QuadMesh]
+    np.testing.assert_allclose(image.dimension_values(2), [-70.0])
+    data = source()
+    data.Sv.values[0, 0, 0] = -80.0
+    plotted = module.rasterize_echogram(
+        echogram(data, "a"),
+        width=1,
+        height=1,
+        dynamic=False,
+        aggregation="mean",
+    )
+    assert plotted.data.sizes["ping_time"] == 1
+    np.testing.assert_allclose(
+        plotted.dimension_values(2), [data.Sv.sel(channel="a").mean().item()]
+    )

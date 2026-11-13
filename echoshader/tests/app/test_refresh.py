@@ -1,5 +1,6 @@
 """Refresh regression checks; no network downloads or running server required."""
 
+import asyncio
 import os
 import sqlite3
 import sys
@@ -279,9 +280,17 @@ def test_cps_unchanged_refresh_keeps_existing_plot(tmp_path, monkeypatch):
         },
         coords={"channel": ["18", "38", "70"], "ping_time": times, "range_sample": range(4)},
     )
-    store = tmp_path / "CPS_Sv" / "a.zarr"
-    store.parent.mkdir()
+    ds.attrs.update(
+        transect_start="2024-01-01T00:00:00Z",
+        transect_end="2024-01-01T00:02:00Z",
+        source_cps_filenames='["a.zarr"]',
+    )
+    store = tmp_path / "viz_cache_CPS/transects/transect_001.zarr"
+    store.parent.mkdir(parents=True)
     ds.to_zarr(store, zarr_format=2)
+    source_path = tmp_path / "CPS_Sv" / "a.zarr"
+    source_path.parent.mkdir(parents=True, exist_ok=True)
+    ds.to_zarr(source_path, zarr_format=2, consolidated=True)
     with sqlite3.connect(tmp_path / "processing.db") as con:
         con.execute(
             "INSERT INTO sv_cps VALUES ('a.zarr','2024-01-01T00:00:00Z','2024-01-01T00:02:00Z','completed')"
@@ -300,6 +309,7 @@ def test_cps_unchanged_refresh_keeps_existing_plot(tmp_path, monkeypatch):
         max_range_samples=160,
     )
     view = tabs[0][1](None, (-100, -30))
+    asyncio.run(view[3].eval(view[3].object))
     assert len(calls) == 1
     view[0][1].clicks += 1
     assert len(calls) == 1

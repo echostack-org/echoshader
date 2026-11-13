@@ -1,5 +1,6 @@
 """CPS controls reuse elements, bound reads and expose clipped transects."""
 
+import json
 import sqlite3
 
 import holoviews as hv
@@ -49,6 +50,14 @@ def survey(tmp_path):
     )
     (tmp_path / "CPS_Sv").mkdir()
     data.to_zarr(tmp_path / "CPS_Sv/a.zarr", zarr_format=2)
+    data.attrs.update(
+        transect_start="2024-01-01T00:00:00Z",
+        transect_end="2024-01-01T00:02:00Z",
+        source_cps_filenames=json.dumps(["a.zarr"]),
+    )
+    cache = tmp_path / "viz_cache_CPS/transects/transect_001.zarr"
+    cache.parent.mkdir(parents=True)
+    data.to_zarr(cache, zarr_format=2, consolidated=True)
     return tmp_path
 
 
@@ -78,15 +87,21 @@ def test_selectors_route_variable_and_channels_to_existing_elements(survey, monk
     monkeypatch.setattr(cps, "echogram", record("single"))
     app = view(survey, monkeypatch)
     variable, mode, channel, red, _green, _blue, _show_bottom = app[1]
+    apply = app[0][2]
     assert variable.options == ["Sv", "Sv_water_column"]
-    assert calls[-1][1]["channel"] == ["18", "38", "70"]
-    assert any("120 kHz" in label for label in red.options)
-    red.value = "120"
     assert calls[-1][1]["channel"] == ["120", "38", "70"]
+    assert any("120 kHz" in label for label in red.options)
+    count = len(calls)
+    red.value = "18"
+    assert len(calls) == count
+    apply.clicks += 1
+    assert calls[-1][1]["channel"] == ["18", "38", "70"]
     variable.value = "Sv_water_column"
+    apply.clicks += 1
     assert calls[-1][1]["var_name"] == "Sv_water_column"
     mode.value = "Single channel"
     channel.value = "120"
+    apply.clicks += 1
     assert calls[-1][0] == "single"
     assert calls[-1][1]["channel"] == "120"
     assert calls[-1][2] == ["120"]
@@ -114,7 +129,10 @@ def test_single_element_renders_001_with_automatic_bounds(survey, monkeypatch):
 
 def test_empty_startup_waits_for_metadata(tmp_path, monkeypatch):
     app = view(tmp_path, monkeypatch)
-    assert any("Waiting for acoustic" in str(alert.object) for alert in app.select(pn.pane.Alert))
+    assert any(
+        "Waiting for acoustic variables and channels" in str(alert.object)
+        for alert in app.select(pn.pane.Alert)
+    )
 
 
 def test_bottom_matches_pings_without_filling_missing_detections(survey):
@@ -136,7 +154,7 @@ def test_bottom_matches_pings_without_filling_missing_detections(survey):
     )
 
 
-def test_seafloor_overlay_toggle_and_new_csv_reuses_acoustic_preview(survey, monkeypatch):
+def test_seafloor_overlay_toggle_and_new_csv_reuses_acoustic_source(survey, monkeypatch):
     calls = []
     original_open = xr.open_zarr
 
@@ -165,6 +183,7 @@ def test_seafloor_overlay_toggle_and_new_csv_reuses_acoustic_preview(survey, mon
     np.testing.assert_allclose(line.dimension_values("depth"), [50.0, 60.0, 70.0])
     hv.render(plot)
     app[1][-1].value = False
+    app[0][2].clicks += 1
     assert not isinstance(app.select(pn.pane.HoloViews)[0].object, hv.Overlay)
     assert len(calls) == count
 
@@ -180,7 +199,10 @@ def test_single_file_catalogue_includes_bottom_and_its_revision(survey):
         }
     ).to_csv(path, index=False)
     entries = cps.build_files(root=survey)
-    for label in ("Latest completed transect", "CPS · a.zarr"):
+    for label in (
+        "Latest completed transect",
+        next(label for label in entries if label.startswith("Transect")),
+    ):
         with entries[label]() as data:
             np.testing.assert_allclose(data.seafloor_depth, [50.0, 60.0, 70.0])
     before = entries["Latest completed transect"].revision

@@ -1,12 +1,18 @@
 """Launch an Echoshader application from a YAML configuration."""
 
 import argparse
+import logging
 from pathlib import Path
 
 import panel as pn
 
 from .builder import build_app
 from .config import load_config
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 
 def launch(

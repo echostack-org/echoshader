@@ -24,6 +24,58 @@ class DatasetValidation:
     tricolor_reason: str
 
 
+def resolve_rgb_channels(ds, frequencies=None, *, tolerance_hz=1000):
+    """Resolve RGB frequencies in Hz; explicit requests never use substitutes.
+
+    Without configuration, prefer 120/38/70 kHz then remaining distinct
+    channels. Fewer than three channels cannot produce RGB.
+    """
+    names = tuple(map(str, ds.channel.values))
+    nominal = ds.get("frequency_nominal")
+    if nominal is None:
+        if frequencies is not None:
+            raise ValueError("RGB frequencies require frequency_nominal metadata.")
+        if len(names) < 3:
+            raise ValueError("RGB requires three distinct channels.")
+        return names[:3]
+    if nominal.dims != ("channel",):
+        raise ValueError("frequency_nominal must have one value per channel.")
+    values = np.asarray(nominal.values, dtype=float)
+    if frequencies is None:
+        selected = []
+        for target in (120000, 38000, 70000):
+            matches = np.flatnonzero(np.isfinite(values) & (abs(values - target) <= tolerance_hz))
+            if len(matches) == 1 and names[matches[0]] not in selected:
+                selected.append(names[matches[0]])
+        selected.extend(name for name in names if name not in selected)
+        if len(selected) < 3:
+            raise ValueError("RGB requires three distinct channels.")
+        return tuple(selected[:3])
+    if not isinstance(frequencies, (list, tuple)) or len(frequencies) != 3:
+        raise ValueError("rgb_frequencies must contain three frequencies in Hz (red, green, blue).")
+    if any(isinstance(f, (bool, str)) for f in frequencies):
+        raise ValueError("RGB frequencies must be positive finite numbers in Hz.")
+    try:
+        requested = np.asarray(frequencies, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("RGB frequencies must be positive finite numbers in Hz.") from exc
+    if requested.shape != (3,) or not np.isfinite(requested).all() or (requested <= 0).any():
+        raise ValueError("RGB frequencies must be positive finite numbers in Hz.")
+    selected = []
+    for target in requested:
+        matches = np.flatnonzero(np.isfinite(values) & (abs(values - target) <= tolerance_hz))
+        if len(matches) != 1:
+            available = ", ".join(f"{f / 1000:g}" for f in values if np.isfinite(f))
+            raise ValueError(
+                f"RGB requires one channel near {target / 1000:g} kHz; found {len(matches)}. "
+                f"Available frequencies (kHz): {available}."
+            )
+        selected.append(names[matches[0]])
+    if len(set(selected)) != 3:
+        raise ValueError("RGB frequencies must resolve to three distinct channels.")
+    return tuple(selected)
+
+
 def _equal_geometry(a: xr.DataArray, b: xr.DataArray, atol: float) -> bool:
     """Compare full physical geometry, including matching missing-value masks."""
     a, b = xr.align(a, b, join="exact")

@@ -604,6 +604,16 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
 
         def changed(current):
             sync_fields()
+
+            # Initialize applied settings when acoustic metadata first arrive.
+            if (
+                applied.variable is None
+                and variable.value is not None
+                and channel.value is not None
+                and all(widget.value is not None for widget in rgb)
+            ):
+                apply_settings(None)
+
             refresh.clicks += 1
             notice.visible = False
             return not failed[0]

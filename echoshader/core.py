@@ -25,12 +25,14 @@ class Echoshader:
         self,
         channel: str | list[str] | None = None,
         vert_dim: str = "echo_range",
+        **kwargs,
     ):
         """Create single- or multi-channel echograms."""
         return echogram_element(
             self._obj,
             channel=channel,
             vert_dim=vert_dim,
+            **kwargs,
         )
 
     def tricolor_echogram(
@@ -39,6 +41,7 @@ class Echoshader:
         vmin: float,
         vmax: float,
         vert_dim: str = "echo_range",
+        **kwargs,
     ):
         """Create a tricolor RGB echogram."""
 
@@ -48,6 +51,7 @@ class Echoshader:
             vmin=vmin,
             vmax=vmax,
             vert_dim=vert_dim,
+            **kwargs,
         )
 
     def track(

@@ -19,6 +19,9 @@ def table(
     holoviews.Table
         Summary statistics for the complete dataset and each channel.
     """
+    if isinstance(MVBS_ds, pandas.DataFrame):
+        return holoviews.Table(MVBS_ds)
+
     obj_df_sum = MVBS_ds.Sv.to_dataframe()
 
     skew_sum = obj_df_sum["Sv"].skew()

@@ -7,6 +7,7 @@ This module does NOT import Echodataflow, Prefect, or a YAML builder.
 
 from __future__ import annotations
 
+import asyncio
 import datetime as dt
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,7 +21,11 @@ import pandas as pd
 import panel as pn
 import param
 import xarray as xr
-from bokeh.models import CustomJSTickFormatter
+from bokeh.models import (
+    CustomJSTickFormatter,
+    DatetimeTicker,
+    DatetimeTickFormatter,
+)
 
 from echoshader.elements.curve import curve
 from echoshader.elements.echogram import echogram, tricolor_echogram
@@ -33,6 +38,29 @@ from .navigation import attach_navigation, navigation_group
 
 hv.extension("bokeh")
 pn.extension("tabulator")
+
+
+def _format_app_time_axis(plot, element):
+    for axis in plot.state.xaxis:
+        axis.ticker = DatetimeTicker(desired_num_ticks=10)
+        axis.formatter = DatetimeTickFormatter(
+            seconds="%H:%M:%S",
+            minsec="%H:%M:%S",
+            minutes="%H:%M:%S",
+        )
+        axis.major_label_orientation = np.pi / 4
+        axis.axis_label = "Time (UTC)"
+
+
+class AppliedSettings(param.Parameterized):
+    interval = param.Tuple()
+    clim = param.Tuple()
+    cmap = param.String()
+    variable = param.String()
+    rgb_variable = param.String()
+    rgb_red = param.String()
+    rgb_green = param.String()
+    rgb_blue = param.String()
 
 
 @dataclass
@@ -235,6 +263,48 @@ def build_acoustic_app(
 
     selection = WindowState()
 
+    # Draft controls do not redraw plots until one of these buttons is clicked.
+    applied = AppliedSettings(
+        interval=tuple(selection.window),
+        clim=tuple(color.value),
+        cmap=cmap.value,
+        variable=variable_widget.value,
+        rgb_variable=rgb_variable_widget.value,
+        rgb_red=rgb_widgets[0].value,
+        rgb_green=rgb_widgets[1].value,
+        rgb_blue=rgb_widgets[2].value,
+    )
+    apply_multifrequency = pn.widgets.Button(name="Apply", button_type="primary", disabled=True)
+    apply_tricolor = pn.widgets.Button(name="Apply", button_type="primary", disabled=True)
+    multi_spinner = pn.indicators.LoadingSpinner(value=False, width=24, height=24)
+    rgb_spinner = pn.indicators.LoadingSpinner(value=False, width=24, height=24)
+    apply_buttons = (apply_multifrequency, apply_tricolor)
+
+    def enable_single_apply(*events):
+        for button in apply_buttons:
+            button.disabled = False
+
+    for widget in [timeline, color, cmap, variable_widget, rgb_variable_widget, *rgb_widgets]:
+        widget.param.watch(enable_single_apply, "value")
+    selection.param.watch(enable_single_apply, "window")
+
+    def apply_single_settings(event):
+        applied.param.update(
+            interval=tuple(selection.window),
+            clim=tuple(color.value),
+            cmap=cmap.value,
+            variable=variable_widget.value,
+            rgb_variable=rgb_variable_widget.value,
+            rgb_red=rgb_widgets[0].value,
+            rgb_green=rgb_widgets[1].value,
+            rgb_blue=rgb_widgets[2].value,
+        )
+        for button in apply_buttons:
+            button.disabled = True
+
+    apply_multifrequency.on_click(apply_single_settings)
+    apply_tricolor.on_click(apply_single_settings)
+
     time_index = pd.DatetimeIndex(times)
 
     start_input = pn.widgets.DatetimeInput(
@@ -409,14 +479,16 @@ def build_acoustic_app(
             var_name=variable,
             vert_dim=vert_dim,
             rasterized=source.rasterized,
+            dynamic=False,
         ).opts(
+            hooks=[_format_app_time_axis],
             responsive=True,
             height=300,
             cmap=palette,
             clim=tuple(clim),
             xlim=plot_xrange(bounds),
             invert_yaxis=True,
-            colorbar=False,
+            colorbar=True,
             default_tools=[],
             tools=[
                 "hover",
@@ -497,7 +569,9 @@ def build_acoustic_app(
             var_name=variable,
             vert_dim=dim,
             rasterized=source.rasterized,
+            dynamic=False,
         ).opts(
+            hooks=[_format_app_time_axis],
             responsive=True,
             height=450,
             framewise=False,
@@ -522,6 +596,22 @@ def build_acoustic_app(
                 rasterized=source.rasterized,
             )
         return attach_navigation(plot, navigation_group())
+
+    async def multifrequency_async(bounds, clim, palette, variable):
+        multi_spinner.value = True
+        apply_multifrequency.disabled = True
+        try:
+            return await asyncio.to_thread(multifrequency, bounds, clim, palette, variable)
+        finally:
+            multi_spinner.value = False
+
+    async def tricolor_async(bounds, clim, variable, red, green, blue):
+        rgb_spinner.value = True
+        apply_tricolor.disabled = True
+        try:
+            return await asyncio.to_thread(tricolor, bounds, clim, variable, red, green, blue)
+        finally:
+            rgb_spinner.value = False
 
     def selection_label(bounds):
         a, b = bounded(bounds)
@@ -711,8 +801,8 @@ def build_acoustic_app(
     if history is not None:
         details.append(("History", pn.pane.Str(str(history))))
 
-    interval = selection.param.window
-    clim = color.param.value_throttled
+    interval = applied.param.interval
+    clim = applied.param.clim
     optional_tabs = []
     for tab_name, content in extra_tabs or []:
         # Optional recipes may provide a native Panel object or a factory
@@ -736,6 +826,8 @@ def build_acoustic_app(
         pn.Column(color, width=270),
         pn.Column(cmap, width=180),
         variable_widget,
+        apply_multifrequency,
+        multi_spinner,
         sizing_mode="stretch_width",
     )
 
@@ -746,11 +838,11 @@ def build_acoustic_app(
                 visualization_controls,
                 lazy_view(
                     pn.bind(
-                        multifrequency,
+                        multifrequency_async,
                         interval,
                         clim,
-                        cmap.param.value,
-                        variable_widget.param.value,
+                        applied.param.cmap,
+                        applied.param.variable,
                     )
                 ),
             ),
@@ -761,16 +853,20 @@ def build_acoustic_app(
                 pn.FlexBox(
                     rgb_variable_widget,
                     *rgb_widgets,
+                    apply_tricolor,
+                    rgb_spinner,
                     flex_wrap="wrap",
                     sizing_mode="stretch_width",
                 ),
                 lazy_view(
                     pn.bind(
-                        tricolor,
+                        tricolor_async,
                         interval,
                         clim,
-                        rgb_variable_widget.param.value,
-                        *(widget.param.value for widget in rgb_widgets),
+                        applied.param.rgb_variable,
+                        applied.param.rgb_red,
+                        applied.param.rgb_green,
+                        applied.param.rgb_blue,
                     )
                 ),
             ),
@@ -793,7 +889,7 @@ def build_acoustic_app(
     )
     navigator = pn.Column(
         "### Select acoustic interval",
-        pn.bind(selection_label, interval),
+        pn.bind(selection_label, selection.param.window),
         timeline,
         start_input,
         end_input,
@@ -818,7 +914,6 @@ def build_acoustic_app(
     template = pn.template.FastListTemplate(
         title="Echoshader",
         theme_toggle=False,
-        busy_indicator=None,
         sidebar_width=330,
         sidebar=[sidebar],
         main=[tabs],

@@ -1,13 +1,17 @@
 """Read CPS products for Echoshader's optional recent-transects tab."""
 
+import asyncio
+import logging
 import sqlite3
-from contextlib import ExitStack, closing
+from contextlib import closing
 from functools import lru_cache
 from pathlib import Path
+from time import perf_counter
 
 import numpy as np
 import pandas as pd
 import panel as pn
+import param
 import xarray as xr
 
 from echoshader.app.data import bounded_preview, source_revision
@@ -16,6 +20,8 @@ from echoshader.app.refresh import file_revision, watch_changes
 from echoshader.elements.curve import curve
 from echoshader.elements.echogram import echogram, tricolor_echogram
 from echoshader.elements.transect_map import transect_map as _transect_map
+
+logger = logging.getLogger(__name__)
 
 
 def _catalogue(database, count=None, completed_only=False):
@@ -85,14 +91,17 @@ def _bottom_samples(paths, data):
     return bottom.set_index("time").depth.reindex(times).to_numpy(dtype=float)
 
 
-def _combine(parts, start, end):
-    """Assemble the requested interval consistently for previews and file view."""
-    data = xr.concat(parts, dim="ping_time", data_vars="minimal", coords="minimal", compat="equals")
-    data = data.sortby("ping_time").sel(
-        ping_time=slice(start.tz_convert(None), end.tz_convert(None))
-    )
-    _, indices = np.unique(data.ping_time.values, return_index=True)
-    return data.isel(ping_time=np.sort(indices))
+def _transect_path(root, part):
+    """The upstream workflow owns preparation of each complete transect."""
+    return root / "viz_cache_CPS" / "transects" / f"transect_{str(part).zfill(3)}.zarr"
+
+
+def _prepared_revision(path):
+    """Missing prepared products are retried; never rebuild from CPS files."""
+    try:
+        return source_revision(path)
+    except FileNotFoundError:
+        return None
 
 
 def build_tabs(*, ds, root, config, max_pings, max_range_samples):
@@ -110,24 +119,31 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
     bottom_root = root / config.get("seafloor_path", "CPS_Seafloor_CSVs")
 
     def read_catalogue():
-        return _catalogue(database, int(config.get("count", 10)))
+        # Read all transects; render_cached applies the display limit
+        # after filtering for existing Zarrs.
+        return _catalogue(database, completed_only=True)
 
     def revision():
         transects, files = read_catalogue()
         return (
             transects.to_json(),
             files.to_json(),
-            _file_revisions(root, tuple(files.cps_filename)),
+            tuple(
+                (str(part), _prepared_revision(_transect_path(root, part)))
+                for part in transects.transect_part
+            ),
             tuple(file_revision(path) for path in _bottom_paths(bottom_root, files.cps_filename)),
         )
 
     @lru_cache(maxsize=1)
     def available_fields(current_revision):
-        """Read one completed file's metadata; do not load acoustic arrays."""
-        _, files = read_catalogue()
-        if files.empty:
+        """Read metadata from the latest available prepared transect only."""
+        transects, _ = read_catalogue()
+        paths = (_transect_path(root, part) for part in transects.transect_part)
+        path = next((path for path in paths if path.is_dir()), None)
+        if path is None:
             return [], {}
-        with xr.open_zarr(root / "CPS_Sv" / files.iloc[-1].cps_filename) as data:
+        with xr.open_zarr(path) as data:
             requested = config.get("variables")
             variables = [
                 name
@@ -148,14 +164,14 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
             return variables, channels
 
     @lru_cache(maxsize=10)
-    def read_preview(selected_names, start, end, revisions, variable, channels):
-        """Cache bounded previews by variable, channels, interval and source revision."""
-        with ExitStack() as stack:
-            parts = [
-                stack.enter_context(xr.open_zarr(root / "CPS_Sv" / name)) for name in selected_names
-            ]
-            if not parts:
-                raise ValueError("No completed Sv data available")
+    def read_preview(path, revision, variable, channels):
+        """Read a display selection from one upstream-prepared transect."""
+        started = perf_counter()
+        if not path.is_dir():
+            raise FileNotFoundError(f"Waiting for prepared transect: {path.name}")
+        if _prepared_revision(path) != revision:
+            raise OSError("Prepared transect was updated; retrying on the next refresh")
+        with xr.open_zarr(path) as source:
             names = (
                 variable,
                 "depth",
@@ -164,12 +180,11 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                 "latitude",
                 "frequency_nominal",
             )
-            parts = [part[[name for name in names if name in part]] for part in parts]
-            data = _combine(parts, start, end)
+            if variable not in source:
+                raise ValueError(f"{variable} is unavailable in {path.name}")
+            data = source[[name for name in names if name in source]]
             if not data.sizes.get("ping_time", 0):
-                raise ValueError("No pings in this transect interval")
-            if variable not in data:
-                raise ValueError(f"{variable} is unavailable in this transect's CPS files")
+                raise ValueError(f"No pings in prepared transect: {path.name}")
             navigation = None
             if (
                 "latitude" in data
@@ -185,6 +200,16 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                 raise ValueError("No finite longitude values for this transect")
             data = data.sel(channel=list(dict.fromkeys(channels)))
             data = bounded_preview(data, variable, max_pings, max_range_samples).load()
+        if _prepared_revision(path) != revision:
+            raise OSError("Prepared transect was updated; retrying on the next refresh")
+        logger.info(
+            "CPS preview read: variable=%s channels=%s store=%s pings=%d time=%.2fs",
+            variable,
+            channels,
+            path.name,
+            data.sizes.get("ping_time", 0),
+            perf_counter() - started,
+        )
         return data, navigation
 
     def tab(interval, clim):
@@ -240,7 +265,8 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                     if previous in names:
                         widget.value = previous
                     elif names:
-                        target = (18000, 38000, 70000)[max(0, index - 1)]
+                        rgb_frequencies = config.get("rgb_frequencies", [120000, 38000, 70000])
+                        target = rgb_frequencies[max(0, index - 1)]
                         labels = list(channels)
                         frequencies = [
                             float(label.split(" kHz")[0]) * 1000 if " kHz" in label else np.nan
@@ -266,6 +292,48 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
         sync_fields()
         show_channels()
 
+        class AppliedTransectSettings(param.Parameterized):
+            variable = param.Parameter(default=None, allow_None=True)
+            mode = param.String(default="RGB")
+            channel = param.Parameter(default=None, allow_None=True)
+            red = param.Parameter(default=None, allow_None=True)
+            green = param.Parameter(default=None, allow_None=True)
+            blue = param.Parameter(default=None, allow_None=True)
+            show_bottom = param.Boolean(default=False)
+
+        applied = AppliedTransectSettings(
+            variable=variable.value,
+            mode=mode.value,
+            channel=channel.value,
+            red=rgb[0].value,
+            green=rgb[1].value,
+            blue=rgb[2].value,
+            show_bottom=show_bottom.value,
+        )
+        apply = pn.widgets.Button(name="Apply", button_type="primary", disabled=True)
+        spinner = pn.indicators.LoadingSpinner(value=False, width=24, height=24)
+
+        def enable_apply(*events):
+            if not syncing[0]:
+                apply.disabled = False
+
+        for widget in [variable, mode, channel, *rgb, show_bottom]:
+            widget.param.watch(enable_apply, "value")
+
+        def apply_settings(event):
+            applied.param.update(
+                variable=variable.value,
+                mode=mode.value,
+                channel=channel.value,
+                red=rgb[0].value,
+                green=rgb[1].value,
+                blue=rgb[2].value,
+                show_bottom=show_bottom.value,
+            )
+            apply.disabled = True
+
+        apply.on_click(apply_settings)
+
         @lru_cache(maxsize=1)
         def render_cached(
             limits,
@@ -277,14 +345,32 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
         ):
             failed[0] = False
             transects, files = read_catalogue()
+
+            transects = transects.copy()
+            transects["_cache_path"] = transects["transect_part"].map(
+                lambda part: _transect_path(root, part)
+            )
+            transects = transects[transects["_cache_path"].map(lambda path: path.is_dir())]
+            transects = (
+                transects.sort_values("start_time", ascending=False)
+                .head(int(config.get("count", 5)))
+                .drop(columns="_cache_path")
+            )
+
             if transects.empty:
-                return pn.pane.Alert("Waiting for completed transects…", alert_type="warning")
+                return pn.pane.Alert(
+                    "Waiting for prepared transects…",
+                    alert_type="warning",
+                )
+
             rows, plots, bounds = [], [], []
             tracks = []
             active = {str(value).zfill(3) for value in transects.transect_part}
+
             for number in list(preview_plots):
                 if number not in active:
                     preview_plots.pop(number)
+
             for _, row in transects.iterrows():
                 number = str(row.transect_part).zfill(3)
                 start, end = (
@@ -292,15 +378,19 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                     pd.to_datetime(row.end_time, utc=True),
                 )
                 selected = files[(files.last_ping_time >= start) & (files.first_ping_time <= end)]
-                info = pn.pane.Markdown(f"**{number}**", width=48, margin=(4, 2, 0, 0))
+                info = pn.pane.Markdown(
+                    f"**{number}**",
+                    width=48,
+                    margin=(4, 2, 0, 0),
+                )
+
                 try:
                     selected_names = tuple(selected.cps_filename)
-                    revisions = _file_revisions(root, selected_names)
+                    path = _transect_path(root, row.transect_part)
+                    prepared_revision = _prepared_revision(path)
                     key = (
-                        selected_names,
-                        start,
-                        end,
-                        revisions,
+                        path,
+                        prepared_revision,
                         tuple(limits),
                         variable_name,
                         display_mode,
@@ -314,16 +404,17 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                         if overlay_bottom
                         else (),
                     )
+
                     cached = preview_plots.get(number)
                     if cached is None or cached[0] != key:
+                        render_started = perf_counter()
                         data, navigation = read_preview(
-                            selected_names,
-                            start,
-                            end,
-                            revisions,
+                            path,
+                            prepared_revision,
                             variable_name,
                             channels,
                         )
+
                         bound = (
                             float(data.longitude.min()),
                             float(data.longitude.max()),
@@ -332,15 +423,19 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                             bound[1] < fixed_xlim[0] or bound[0] > fixed_xlim[1]
                         ):
                             raise ValueError(
-                                f"Transect longitude {bound[0]:.4f} to {bound[1]:.4f} is outside "
-                                f"xlim {fixed_xlim}. Remove xlim from app.yaml to show all transects."
+                                f"Transect longitude {bound[0]:.4f} to {bound[1]:.4f} "
+                                f"is outside xlim {fixed_xlim}. Remove xlim from "
+                                "app.yaml to show all transects."
                             )
+
                         options = {
                             "var_name": variable_name,
                             "x_dim": "longitude",
                             "vert_dim": config.get("vert_dim", "depth"),
                             "rasterized": True,
+                            "dynamic": False,
                         }
+
                         if display_mode == "RGB":
                             plot = tricolor_echogram(
                                 data,
@@ -350,9 +445,15 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                                 **options,
                             )
                         else:
-                            plot = echogram(data, channel=channels[0], **options).opts(
-                                clim=tuple(limits), cmap=config.get("cmap", "Viridis")
+                            plot = echogram(
+                                data,
+                                channel=channels[0],
+                                **options,
+                            ).opts(
+                                clim=tuple(limits),
+                                cmap=config.get("cmap", "Viridis"),
                             )
+
                         if overlay_bottom:
                             depths = _bottom_samples(bottom_paths, data)
                             if np.isfinite(depths).any():
@@ -366,6 +467,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                                     tools=["hover"],
                                     show_legend=False,
                                 )
+
                         plot = plot.opts(
                             responsive=True,
                             height=int(config.get("plot_height", 150)),
@@ -388,42 +490,52 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                             sizing_mode="stretch_width",
                             margin=0,
                         )
-                        preview_plots[number] = (key, plot, bound, navigation, pane)
+                        preview_plots[number] = (
+                            key,
+                            plot,
+                            bound,
+                            navigation,
+                            pane,
+                        )
+                        logger.info(
+                            "CPS transect render: transect=%s variable=%s display=%s time=%.2fs",
+                            number,
+                            variable_name,
+                            display_mode,
+                            perf_counter() - render_started,
+                        )
+
                     _, plot, bound, navigation, pane = preview_plots[number]
                     if navigation is not None:
                         tracks.append((number, *navigation))
                     plots.append(plot)
                     bounds.append(bound)
                     rows.append((info, pane))
+
                 except (ValueError, KeyError, OSError) as exc:
                     failed[0] = True
                     rows.append((info, pn.pane.Alert(str(exc), alert_type="warning")))
+
             if bounds:
-                lo, hi = min(b[0] for b in bounds), max(b[1] for b in bounds)
+                lo = min(bound[0] for bound in bounds)
+                hi = max(bound[1] for bound in bounds)
                 pad = max((hi - lo) * 0.01, 1e-6)
-                limits = fixed_xlim if fixed_xlim is not None else (lo - pad, hi + pad)
+                x_limits = fixed_xlim if fixed_xlim is not None else (lo - pad, hi + pad)
                 for plot in plots:
-                    plot.opts(xlim=limits)
+                    plot.opts(xlim=x_limits)
+
             if plots:
                 plots[-1].opts(xaxis="bottom", xlabel="Longitude")
+
             echograms = pn.Column(
                 *[
                     pn.Row(
                         info,
-                        (
-                            pn.pane.HoloViews(
-                                plot,
-                                linked_axes=True,
-                                sizing_mode="stretch_width",
-                                margin=0,
-                            )
-                            if hasattr(plot, "opts")
-                            else plot
-                        ),
+                        pane,
                         sizing_mode="stretch_width",
                         margin=0,
                     )
-                    for info, plot in rows
+                    for info, pane in rows
                 ],
                 sizing_mode="stretch_width",
                 margin=0,
@@ -434,7 +546,7 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                 _transect_map(
                     tracks,
                     config,
-                    [str(r.transect_part).zfill(3) for _, r in transects.iterrows()],
+                    [str(row.transect_part).zfill(3) for _, row in transects.iterrows()],
                 ),
                 echograms,
                 sizing_mode="stretch_width",
@@ -482,6 +594,14 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
                     f"Waiting for CPS data; will retry: {exc}", alert_type="warning"
                 )
 
+        async def render_async(*args):
+            spinner.value = True
+            apply.disabled = True
+            try:
+                return await asyncio.to_thread(render, *args)
+            finally:
+                spinner.value = False
+
         def changed(current):
             sync_fields()
             refresh.clicks += 1
@@ -503,19 +623,21 @@ def build_tabs(*, ds, root, config, max_pings, max_range_samples):
         )
         content = pn.panel(
             pn.bind(
-                render,
+                render_async,
                 clim,
                 refresh.param.clicks,
-                variable,
-                mode,
-                channel,
-                *rgb,
-                show_bottom,
+                applied.param.variable,
+                applied.param.mode,
+                applied.param.channel,
+                applied.param.red,
+                applied.param.green,
+                applied.param.blue,
+                applied.param.show_bottom,
             )
         )
         check()
         return pn.Column(
-            pn.Row("**Transects**", refresh),
+            pn.Row("**Transects**", refresh, apply, spinner),
             pn.FlexBox(variable, mode, channel, *rgb, show_bottom),
             notice,
             content,
@@ -557,23 +679,16 @@ def build_files(*, root, processing_db="processing.db", seafloor_path="CPS_Seafl
         start = start.tz_localize("UTC") if start.tzinfo is None else start.tz_convert("UTC")
         end = end.tz_localize("UTC") if end.tzinfo is None else end.tz_convert("UTC")
         names = files.loc[(first <= end) & (last >= start), "cps_filename"]
-        parts = []
+        path = _transect_path(root, row.transect_part)
+        if not path.is_dir():
+            raise FileNotFoundError(f"Waiting for prepared transect: {path.name}")
+        data = xr.open_zarr(path)
         try:
-            parts = [xr.open_zarr(root / "CPS_Sv" / name) for name in names]
-            if not parts:
-                raise ValueError("No completed CPS files cover this transect")
-            data = _combine(
-                [part.drop_vars("source_filenames", errors="ignore") for part in parts],
-                start,
-                end,
-            )
             attach_bottom(data, names)
             data.attrs = dict(data.attrs, transect_number=str(row.transect_number))
-            data.set_close(lambda: [part.close() for part in parts])
             return data
         except Exception:
-            for part in parts:
-                part.close()
+            data.close()
             raise
 
     entries = {}
@@ -591,7 +706,7 @@ def build_files(*, root, processing_db="processing.db", seafloor_path="CPS_Seafl
             row.start_time,
             row.end_time,
             names,
-            _file_revisions(root, names),
+            _prepared_revision(_transect_path(root, row.transect_part)),
             tuple(file_revision(path) for path in _bottom_paths(bottom_root, names)),
         )
         entries[label] = loader

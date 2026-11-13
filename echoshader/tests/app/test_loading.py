@@ -1,3 +1,5 @@
+import asyncio
+
 import dask.array as da
 import numpy as np
 import panel as pn
@@ -48,8 +50,13 @@ def test_bounded_cache_and_changed_source(tmp_path):
     metadata = tmp_path / ".zattrs"
     metadata.write_text("{}")
     cache = AcousticReadCache(ds, tmp_path, max_bytes=1)
-    cache.read("Sv", "a", 0, 4, "echo_range")
-    cache.read("Sv", "a", 0, 4, "echo_range")
+    first = cache.read("Sv", "a", 0, 4, "echo_range")
+    second = cache.read("Sv", "a", 0, 4, "echo_range")
+    assert len(calls) == 2  # above the cache budget: each read computes independently
+    assert first.Sv.chunks is None
+    assert second.Sv.chunks is None
+    assert first.sizes == {"ping_time": 4, "echo_range": 8}
+    xr.testing.assert_equal(first.compute(), second.compute())
     assert len(calls) == 2
     metadata.write_text('{"transect_number":"010"}')
     with pytest.raises(SourceChangedError, match="updated"):
@@ -87,15 +94,15 @@ def test_main_and_rgb_reuse_reads_and_leave_extension_unopened():
         return pn.pane.Markdown("Transects")
 
     app = build_acoustic_app(
-        AcousticSource(dataset(calls)), extra_tabs=[("Recent transects", extra)]
+        AcousticSource(dataset(calls), rasterized=False), extra_tabs=[("Recent transects", extra)]
     )
     tabs = app.main[0]
     multi = tabs[0][1]
-    multi.eval(multi.object)
+    asyncio.run(multi.eval(multi.object))
     assert len(calls) == 3
-    multi.eval(multi.object)
+    asyncio.run(multi.eval(multi.object))
     assert len(calls) == 3
     rgb = tabs[1][1]
-    rgb.eval(rgb.object)
+    asyncio.run(rgb.eval(rgb.object))
     assert len(calls) == 3
     assert not extension_calls

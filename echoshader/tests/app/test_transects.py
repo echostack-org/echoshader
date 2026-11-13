@@ -8,7 +8,7 @@ import xarray as xr
 hv.extension("bokeh")
 
 
-def test_previews_are_reused_and_refresh_reads_catalogue(tmp_path, monkeypatch):
+def test_full_sources_are_reused_and_refresh_reads_catalogue(tmp_path, monkeypatch):
     from echoshader.extensions import cps as adapter
 
     (tmp_path / "CPS_Sv").mkdir()
@@ -31,7 +31,15 @@ def test_previews_are_reused_and_refresh_reads_catalogue(tmp_path, monkeypatch):
         },
         attrs={"transect_number": "001"},
     )
+    ds.attrs.update(
+        transect_start="2024-01-01T00:00:00Z",
+        transect_end="2024-01-01T00:00:05Z",
+        source_cps_filenames='["one.zarr"]',
+    )
     ds.to_zarr(tmp_path / "CPS_Sv" / "one.zarr", mode="w", zarr_format=2)
+    cache = tmp_path / "viz_cache_CPS/transects/transect_001.zarr"
+    cache.parent.mkdir(parents=True)
+    ds.to_zarr(cache, zarr_format=2, consolidated=True)
     con = sqlite3.connect(tmp_path / "processing.db")
     con.executescript("""CREATE TABLE transects (transect_part TEXT,transect_number TEXT,
       start_time TEXT,end_time TEXT,status TEXT,coverage_start TEXT,coverage_end TEXT);

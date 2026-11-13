@@ -102,3 +102,26 @@ def transect_map(tracks, config, numbers):
     if missing:
         content.append(pn.pane.Markdown("GPS unavailable: " + ", ".join(missing)))
     return pn.Column(*content, width=width, margin=0)
+
+
+def track_revision(tracks, numbers):
+    """Stable map-input fingerprint; acoustic values and color settings are irrelevant."""
+    from hashlib import blake2b
+
+    return (
+        tuple(numbers),
+        tuple(
+            (
+                number,
+                tuple(
+                    (
+                        np.asarray(values).shape,
+                        np.asarray(values).dtype.str,
+                        blake2b(np.asarray(values).tobytes(), digest_size=16).digest(),
+                    )
+                    for values in (longitude, latitude)
+                ),
+            )
+            for number, longitude, latitude in tracks
+        ),
+    )

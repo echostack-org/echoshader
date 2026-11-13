@@ -22,7 +22,6 @@ def build_pages(config, datasets=None, *, config_dir=None):
     template = pn.template.FastListTemplate(
         title="Echoshader",
         theme_toggle=False,
-        busy_indicator=None,
         sidebar_width=330,
         main=[],
     )

@@ -1,0 +1,33 @@
+app:
+  title: Echoshader - Region Editor example
+  source: survey
+  route: region-editor
+
+data:
+  survey:
+    type: zarr
+    path: data/ds_second_WT_MVBS.zarr
+    label: Transect 53 - 2019
+
+navigation:
+  max_pings: 500
+
+display:
+  variables: [Sv]
+  max_range_samples: 1200
+
+extensions:
+  region_editor:
+    factory: echoshader.app.region_editor:build_region_editor
+    root: data
+    regions: regions/original/transect_53_year_2019_regions.evr
+    rgb_frequencies: [120000, 38000, 18000]
+    rgb_clim: [-90, -30]
+    rendering:
+      rasterized: true
+      max_pings: 500
+    regions_display:
+      show_original: true
+      show_modified: true
+      original_color: '#000000'
+      modified_color: '#00D4FF'

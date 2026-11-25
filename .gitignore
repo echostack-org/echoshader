@@ -35,3 +35,6 @@ docs/source/element_examples.ipynb
 docs/source/echogram_vertical_coordinates.ipynb
 
 /echoshader/test_data/concatenated_MVBS.nc
+
+# Local Region Editor data
+examples/app/region_editor/data/

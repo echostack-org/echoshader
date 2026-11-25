@@ -55,6 +55,10 @@ spasso = [
     "pyarrow>=18",
 ]
 
+region-editor = [
+    "echoregions",
+]
+
 dev = [
     "ipykernel>=6.30.0",
     "pre-commit>=4.1.0",

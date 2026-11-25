@@ -26,7 +26,8 @@ def build_pages(config, datasets=None, *, config_dir=None):
         main=[],
     )
     file_sidebar = pn.Column(sizing_mode="stretch_width")
-    template.sidebar.append(file_sidebar)
+    extension_sidebar = pn.Column(sizing_mode="stretch_width")
+    template.sidebar.extend([file_sidebar, extension_sidebar])
     viewers = []
     extension_sources = []
 
@@ -196,13 +197,16 @@ def build_pages(config, datasets=None, *, config_dir=None):
                 settings.get("root", str(path.parent.parent) if path else "."),
                 config_dir,
             )
-            _, tabs = factory(
+            sidebar, tabs = factory(
                 ds=data,
                 root=root,
                 config=settings,
                 max_pings=int(config.get("navigation", {}).get("max_pings", 500)),
                 max_range_samples=int(config.get("display", {}).get("max_range_samples", 1200)),
             )
+            # Extensions may provide their own controls for the template sidebar.
+            extension_sidebar.objects = list(sidebar) if sidebar is not None else []
+            extension_sidebar.visible = bool(extension_sidebar.objects)
             return pn.Column(
                 *[
                     content(None, (-100, -30)) if callable(content) else content
@@ -248,8 +252,8 @@ def build_pages(config, datasets=None, *, config_dir=None):
 
     def layout(event=None):
         file_sidebar.visible = bool(config.get("data") or datasets) and pages.active == 1
+        extension_sidebar.visible = pages.active >= 2 and bool(extension_sidebar.objects)
         # Template sidebar width is fixed when its HTML is first rendered.
-        # Hide the contents only; keep the sidebar available for Single file.
 
     pages.param.watch(layout, "active")
     layout()
